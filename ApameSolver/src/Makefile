@@ -3,6 +3,8 @@
 
 include ../../makeconfig.mk
 
+BIN_PATH := ../bin
+
 PROGRAM := apame
 
 LIBRARY := apame.a
@@ -43,9 +45,9 @@ OBJECTS :=  \
 ###############################################################################
 ## rules follow
 ###############################################################################
-.PHONY: default clean
+# .PHONY: default
 
-all: $(PROGRAM) move
+default all: $(PROGRAM) move
 
 $(PROGRAM): $(LIBRARY) $(MAIN)
 	$(FC) -o $(PROGRAM) $(MAIN) $(BLASLAPACK_LIB) $(LIBRARY) $(LIB)
@@ -54,4 +56,8 @@ $(LIBRARY): $(OBJECTS)
 	$(AR) $(AR_FLAGS) $(LIBRARY) $^
 
 move:
-	$(MV) $(PROGRAM) ../bin/
+	mkdir -p $(BIN_PATH)
+	$(MV) $(PROGRAM) $(BIN_PATH)
+
+clean::
+	rm -rf $(LIBRARY) $(BIN_PATH)

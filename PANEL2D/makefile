@@ -44,7 +44,12 @@ OBJ = $(patsubst %,$(OBJ_PATH)%,$(OBJS))
 
 MAIN = $(patsubst %,$(OBJ_PATH)%,$(MAINS))
 
-all: $(PROG)
+.PHONY : mkobj
+
+mkobj:
+	mkdir -p $(OBJ_PATH)
+
+all: mkobj $(PROG)
 
 $(OBJ_PATH)xfoil_deps.o: $(SRC_PATH)xfoil_deps.f
 	$(FC) -c $(FC_FLAGS) -r8 $(SRC_PATH)xfoil_deps.f -o $@
@@ -59,4 +64,4 @@ $(LIBRARY): $(OBJ)
 	$(AR) $(AR_FLAGS) $(LIBRARY) $^
 
 clean::
-	$(RM) -rfv $(PROG).exe $(PROG) $(LIBRARY) $(OBJ) $(MAIN) $(MOD_PATH)*.mod
+	$(RM) -rfv $(PROG).exe $(PROG) $(LIBRARY) $(OBJ_PATH) $(OBJ) $(MAIN) $(MOD_PATH)*.mod

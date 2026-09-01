@@ -34,10 +34,11 @@
 ! =================================================================================================
 module pre_assemble_types
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+  
   implicit none
 
-#include "petsc/finclude/petscsys.h"
-  
   type virtualNode
     integer                    :: nodeId
     integer                    :: numDofGeo

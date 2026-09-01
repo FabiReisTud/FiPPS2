@@ -79,7 +79,7 @@ subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
     call MatSetType(tempKmat,MATMPIAIJ,ierr); CHKERRQ(ierr)
     call MatSetFromOptions(tempKmat,ierr); CHKERRQ(ierr)
     call MatSetUp(tempKmat,ierr); CHKERRQ(ierr)
-    call MatMPIAIJSetPreallocation(tempKmat, 0, d_nzz, 0, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
+    call MatMPIAIJSetPreallocation(tempKmat, 0, d_nzz, 0, PETSC_NULL_INTEGER_ARRAY, ierr); CHKERRQ(ierr)
    
     d_nzz = 1
      
@@ -88,7 +88,7 @@ subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
     call MatSetType(Kmat_ones,MATMPIAIJ,ierr); CHKERRQ(ierr)
     call MatSetFromOptions(Kmat_ones,ierr); CHKERRQ(ierr)
     call MatSetUp(Kmat_ones,ierr); CHKERRQ(ierr)
-    call MatMPIAIJSetPreallocation(Kmat_ones, 0, d_nzz, 0, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
+    call MatMPIAIJSetPreallocation(Kmat_ones, 0, d_nzz, 0, PETSC_NULL_INTEGER_ARRAY, ierr); CHKERRQ(ierr)
    
    
     ! Setzen der Werte
@@ -191,7 +191,7 @@ subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
   call MatSetType(invKmat,MATMPIAIJ,ierr); CHKERRQ(ierr)
   call MatSetFromOptions(invKmat,ierr); CHKERRQ(ierr)
   call MatSetUp(invKmat,ierr); CHKERRQ(ierr)
-  call MatMPIAIJSetPreallocation(invKmat, 0, d_nzz, 0, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
+  call MatMPIAIJSetPreallocation(invKmat, 0, d_nzz, 0, PETSC_NULL_INTEGER_ARRAY, ierr); CHKERRQ(ierr)
   
   WRITE(*,*) 'Inverse bilden'
   WRITE(*,*) 'numDof ', numDof

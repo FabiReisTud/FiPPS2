@@ -21,9 +21,14 @@
 # makeconfig.mk:  common configuration file for FiPPS
 #===============================================================================
 
+VERSION=2.0.0
+REVISION=R451
+
+#===============================================================================
+
 # fast - without debugging options
-PETSC_DIR   = /mnt/appl/x86_64/petsc/3.16.1
-SLEPC_DIR   = /mnt/appl/x86_64/slepc/3.16.0_mod
+# PETSC_DIR   = /mnt/appl/x86_64/petsc/3.22.5
+# SLEPC_DIR   = /mnt/appl/x86_64/slepc/3.22.2_mod
 APAME_LIB   = ../ApameSolver/src/apame.a
 PANEL2D_LIB = ../PANEL2D/panel2d.a
 XFOILWRAPPER_LIB = ../XfoilWrapper/xfoilwrapper.a
@@ -31,7 +36,8 @@ FIPPS2_LIB  = libfipps.a
 
 include ${SLEPC_DIR}/lib/slepc/conf/slepc_common
 
-VERSION=2.0.0
+FIPPS := FiPPS
+FIPPS_VERSION := include/version.include
 
 # Fortran compiler
 # LFT

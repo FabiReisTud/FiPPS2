@@ -27,14 +27,13 @@ include makeconfig.mk
 
 # Compile the default rules for each package
 
-
 all:
 	( cd ApameSolver/src ; $(MAKE) all)
 	( cd PANEL2D ; $(MAKE) all)
 	( cd XfoilWrapper ; $(MAKE) all)
-	( echo -n "CHARACTER(len=10), PARAMETER :: version=\"$(VERSION)-R$(REVISION)" > include/version.include )
-	( svn info | grep -i revision | cut -f2 -d: | tr -d [:space:] >> include/version.include )
-	( echo -n "\"" >> include/version.include ) 
+	( echo -n "CHARACTER(len=10), PARAMETER :: version=\"$(VERSION)-R$(REVISION)" > $(FIPPS_VERSION) )
+	( svn info | grep -i revision | cut -f2 -d: | tr -d [:space:] >> $(FIPPS_VERSION) )
+	( echo -n "\"" >> $(FIPPS_VERSION) ) 
 	( cd include ; $(MAKE) all )
 	( cd source ; $(MAKE) flib )
 	( cd outputLibrary ; $(MAKE) all )
@@ -56,5 +55,4 @@ clean::
 	( cd include ; $(MAKE) clean2 )
 	( cd source ; $(MAKE) clean2 )
 	( cd outputLibrary ; $(MAKE) clean2 )
-	rm FiPPS
-	rm include/version.include
+	rm -rf $(FIPPS) $(FIPPS_VERSION)

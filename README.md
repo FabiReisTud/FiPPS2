@@ -7,6 +7,29 @@ A manual (currently available in German only) describing the basic usage of FiPP
 
 # Installation of required libraries
 
+## FiPPS2
+
+### 1. Setup `makeconfig.mk` & environment variables
+
+Edit the `makeconfig.mk` in order to set VERSION and REVISION manually.
+
+Assure that the proper MPI Fortran compiler is used (default: `mpif90`)
+
+Set the environment variables to point to PETSc and SLEPc via
+
+```
+$ export PETSC_DIR=/mnt/appl/x86_64/petsc/3.22.5
+$ export SLEPC_DIR=/mnt/appl/x86_64/slepc/3.22.2_mod
+```
+
+### 2. Build with `make`
+
+In top level directory, build the program with `make` command.
+
+The `FiPPS` executable contains all dependencies statically linked. It must be used together with `libuseroutput.so` on the `LD_LIBRARY_PATH`
+
+
+
 ## PETSc
 
 ### 1. Download current PETSc-Version
@@ -29,31 +52,33 @@ Configure - sequential MKL (recommended, as processes may get into conflict in O
 
 ```
 module load compiler mkl mpich \
-./configure PETSC_ARCH=linux-gnu-intel \
---with-mpi-dir=${MPI_ROOT} \
---with-scalar-type=real \
---with-debugging=0 \
---with-fortran=1 \
---with-blaslapack-dir=${MKLROOT} \
---with-blacs=1 \
---with-blacs-include=${MKLROOT}/include \
---with-blacs-lib="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -Wl,--end-group -lpthread -lm -ldl" \
---with-scalapack=1 \
---with-scalapack-lib="${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -Wl,--end-group -lpthread -lm -ldl" \
---with-scalapack-include=${MKLROOT}/include/ \
---download-metis=1 \
---download-parmetis=1 \
---download-mumps=1 \
---prefix=/mnt/appl/x86_64/petsc/3.16.1
+./configure \
+  PETSC_ARCH=linux-gnu-intel \
+  --with-mpi-dir=${MPI_ROOT} \
+  --with-scalar-type=real \
+  --with-debugging=0 \
+  --with-fortran=1 \
+  --with-blaslapack-dir=${MKLROOT} \
+  --with-blacs=1 \
+  --with-blacs-include=${MKLROOT}/include \
+  --with-blacs-lib="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -Wl,--end-group -lpthread -lm -ldl" \
+  --with-scalapack=1 \
+  --with-scalapack-lib="${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -Wl,--end-group -lpthread -lm -ldl" \
+  --with-scalapack-include=${MKLROOT}/include/ \
+  --download-metis=1 \
+  --download-metis-use-doubleprecision=1 \
+  --download-parmetis=1 \
+  --download-mumps=1 \
+  --prefix=/btmpl/Bibliotheken/petsc-3.22.5
 ```
 
 Explanation of the options:
 
 `PETSC_ARCH=linux-gnu-intel` - just a name (it is also the name of the folder in which the compiled files will be placed at first)
 
-`--with-mpi-dir=/mnt/appl/x86_64/mpich/mpich-3.16.1` - Path in which MPICH can be found
+`--with-mpi-dir=${MPI_ROOT}` - Path in which MPI library can be found (MPI_ROOT has to be set in advance)
 
-`--with-scalar-type=real` - only real numbers (no complex numbers)
+`--with-scalar-type=real` - no complex numbers
 
 `--with-debugging=0` - Turn debugging off (therefore much faster)
 
@@ -74,6 +99,8 @@ Explanation of the options:
 `--with-scalapack-include=...` - Path to include files for SCALAPACK
 
 `--download-metis=1`- Download and compile METIS
+
+`--download-metis-use-doubleprecision=1`- Use METIS in the downloadable version with double precision
 
 `--download-parmetis=1` - Download and compile PARMETIS (for MUMPS)
 
@@ -139,6 +166,8 @@ module load intel/2020a; \
 --FFLAGS="-O3 -xHost" \
 --prefix=/projects/geops2/PETSC/3.16.1_seq
 ```
+
+
 
 ## SLEPc
 
@@ -308,28 +337,28 @@ PetscErrorCode STDestroy(ST *st)
 
 Path where PETSc is found. Settings are taken from there.
 
-    export PETSC_DIR=/mnt/appl/x86_64/petsc/3.16.1
+    export PETSC_DIR=/mnt/appl/x86_64/petsc/3.22.5
 
 ### 5. Path for SLEPc unpacking
 
 Path to which SLEPc has been unpacked.
 
-    export SLEPC_DIR=/btmpl/Software/PETSC/slepc-3.16.0
+    export SLEPC_DIR=/btmpl/Software/PETSC/slepc-3.22.2
 
 ### 6. Configuration
 
-    ./configure --prefix=/mnt/appl/x86_64/slepc/3.16.0_mod
+    ./configure --prefix=/mnt/appl/x86_64/slepc/3.22.2_mod
 
 Explanation of the option:
  
- `--prefix=/mnt/appl/x86_64/slepc/3.16.0_mod` - The SLEPC libraries are copied to this path after compiling with `make install`. Only the necessary files (without doc etc.) are transferred. (Saves disk space, especially with different versions).
+ `--prefix=/mnt/appl/x86_64/slepc/3.22.2_mod` - The SLEPC libraries are copied to this path after compiling with `make install`. Only the necessary files (without doc etc.) are transferred. (Saves disk space, especially with different versions).
 
- ### 7. Correction of includes
+### 7. Correction of includes
 
- Correct includes in the file `/mnt/appl/x86_64/slepc/3.16.0_mod/lib/slepc/conf/slepc_variables` from
+ Correct includes in the file `/mnt/appl/x86_64/slepc/3.22.2_mod/lib/slepc/conf/slepc_variables` from
 
-    SLEPC_INCLUDE       = -I/mnt/appl/x86_64/slepc/3.16.0_mod/include -I/mnt/appl/x86_64/slepc/3.16.0_mod/include
+    SLEPC_INCLUDE       = -I/mnt/appl/x86_64/slepc/3.22.2_mod/include -I/mnt/appl/x86_64/slepc/3.22.2_mod/include
 
 to
 
-    SLEPC_INCLUDE       = -I/mnt/appl/x86_64/slepc/3.16.0_mod/include -I${PETSC_DIR}/include
+    SLEPC_INCLUDE       = -I/mnt/appl/x86_64/slepc/3.22.2_mod/include -I${PETSC_DIR}/include
