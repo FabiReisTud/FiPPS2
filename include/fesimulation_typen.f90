@@ -46,6 +46,7 @@ use residual_typen
 use internals_typen
 use ausgabe_typen
 use ergebnis_typen
+use thermal_typen
 
 implicit none
   
@@ -65,6 +66,7 @@ type fe_simulation
   type(internals_type)          :: internals
   type(ausgabe_type)            :: ausgabe
   type(ergebnis_type)           :: ergebnisse
+  type(thermal_state_type)      :: thermal ! Enthält den Zustand der Wärmeleitungslösung
 
   ! Flags, ob die verschiedenen Punkte ursprünglich eingelesen/angegeben wurden
   logical                       :: is_node
