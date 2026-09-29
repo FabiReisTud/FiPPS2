@@ -269,6 +269,23 @@ end interface
   call init_elem_proc_dist(fesim, mpisize)
   if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'ENDE  - Bestimme MPI-Interna'
   
+  ! =================================================================================================
+  !
+  ! Steady state thermal solution solution
+
+  if (fesim%thermal%enabled) then
+    if (thermal_is_td(fesim%thermal) .or. thermal_is_conv(fesim%thermal)) then
+        write(*,*)
+    else 
+        write(*,*)
+    end if
+    write(*,*)
+  end if
+    
+
+
+  ! =================================================================================================
+
   do scloop = 1,fesim%num_subcases
 
     if (rank == 0 .and. textoutput .eq. .true.) then

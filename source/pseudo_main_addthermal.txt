@@ -1,0 +1,19 @@
+main:
+input_tf(fesim)
+if fesim%thermal%enabled:
+    TaS = Tref
+    if fesim%isTd | fesim%isConv # iterative solution necessary if Temperature-dependent thermal material OR convective boundary condition
+        while (norm_TaS_TaSNew > tol):
+            CaaS = thermal_get_conduction_matrix(TaS)
+            QaS = thermal_get_source_matrix(TaS)
+            TaSNew = TaS + relaxationFactor * thermal_solve(fesim,CaaS,TaS,QaS,rank)
+            norm_TaS_TaSNew = |TaSNew-TaS/TaSNew|_infty
+            TaS = TaSNew
+        else:
+            CaaS = thermal_get_conduction_matrix(TaS)
+            QaS = thermal_get_source_matrix(TaS)
+            TaS = thermal_solve(fesim,CaaS,TaS,QaS,rank)
+        thermal_write_output(TaS)
+    if fesim%thermal%coupled:
+        thermal_translate(fesim,TaS)
+

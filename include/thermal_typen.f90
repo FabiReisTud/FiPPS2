@@ -50,6 +50,7 @@ module thermal_typen
     logical :: coupled_to_structure = .false.   ! Translate calculated temperatures to stress analysis
     logical :: thermal_only = .false.   ! Do only thermal?
     logical :: iterative = .false.             ! Does the model include temperature dependent materials --> if so, iterative solve is necessary
+    logical :: successful = .false. ! war die thermische Berechnung erfolgreich
     integer :: max_iterations = 50      ! Max Iterations for iterative (nonLinear)
     double precision :: tolerance = 1.d-8   ! Convergence tolerance
     double precision :: relaxation = 0.8d0  ! Relaxation factor for NL line search
@@ -59,8 +60,8 @@ module thermal_typen
     type(thermal_material_type), allocatable :: materials(:)
     type(thermal_material_td_type), allocatable :: materials_td(:)
     type(thermal_tbc_type), allocatable :: tbcs(:)
-    type(thermal_flux_bc_type), allocatable :: convections(:)
-    type(thermal_convection_bc_type), allocatable :: fluxes(:)
+    type(thermal_convection_bc_type), allocatable :: convections(:)
+    type(thermal_flux_bc_type), allocatable :: fluxes(:)
   end type thermal_state_type
 
 contains
@@ -286,4 +287,21 @@ contains
 #endif
   end subroutine bcast_thermal
 
-end module thermal_typen
+  function thermal_is_td(state) result(is_td)
+    type(thermal_state_type), intent(in) :: state
+    logical :: is_td
+    
+    is_td = (allocated(state%materials_td) .and. size(state%materials_td) > 0)
+    
+  end function thermal_is_td
+
+  function thermal_is_conv(state) result(is_conv)
+    type(thermal_state_type), intent(in) :: state
+    logical :: is_conv
+    
+    is_conv = (allocated(state%convections) .and. size(state%convections) > 0)
+    
+  end function thermal_is_conv
+  
+
+  end module thermal_typen
