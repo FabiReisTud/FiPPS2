@@ -273,14 +273,14 @@ end interface
   !
   ! Steady state thermal solution solution
 
-  if (fesim%thermal%enabled) then
-    if (thermal_is_td(fesim%thermal) .or. thermal_is_conv(fesim%thermal)) then
-        write(*,*)
-    else 
-        write(*,*)
+    if (fesim%thermal%enabled) then
+      if (thermal_is_td(fesim%thermal) .or. thermal_is_conv(fesim%thermal)) then ! Run nonlinear, iterative solve until convergence criterium is met
+          write(*,*)
+      else ! Run direct solve
+          write(*,*)
+      end if
+      write(*,*)
     end if
-    write(*,*)
-  end if
     
 
 

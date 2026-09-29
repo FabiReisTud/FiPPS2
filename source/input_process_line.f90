@@ -205,6 +205,8 @@ do while (jj <= len(line))
             fesim%is_contact_node_lsolid20 = .true.
         else if (word == 'failure') then
             fesim%is_failure = .true.
+        else if (word == 'is_thermal') then
+            fesim%is_thermal = .true.
         else if (word == 'outputvtk') then
             fesim%ausgabe%outputVTK = .true.
         else if (word == 'outputuser') then

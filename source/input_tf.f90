@@ -1882,6 +1882,21 @@ if (fesim%is_aeroload3d /= .false.) then
     end if
 end if
 
+if (fesim%is_thermal) then
+    fname = 'thermal.fipps'
+    open (unit=37,file=fname,status='old',action='read', iostat=io_error)
+    if (read_error /= 0) then
+        write(*,*) 'Error reading file ', fname
+        write(*,*) 'There was a problem reading the number of rows of the file'
+        err_code=1
+        goto 9999
+    end if
+    ! Hier noch die ganzen thermal_type-Variablen auslesen
+end if
+!hier die weiteren Randbedingungen, Materialien einlesen
+!diese weiteren karten auch mit der input_process_line-subroutine aus der control auslesen lassen
+!deren is_... variablen in fesimulation_typen setzen
+
 !
 ! =================================================================================================
 !

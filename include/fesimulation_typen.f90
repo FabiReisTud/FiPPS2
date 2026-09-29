@@ -107,6 +107,8 @@ type fe_simulation
   logical                       :: is_failure
   logical                       :: is_coord
   logical                       :: is_multistep
+  logical                       :: is_thermal
+  
   
   ! Hilfsgrößen, um Aufwand zu sparen
   integer                       :: num_dof              ! number of dof in whole structure
@@ -231,6 +233,7 @@ contains
     fesim%is_contact_node_quad8    = .FALSE.
     fesim%is_contact_node_lsolid20 = .FALSE.
     fesim%is_multistep             = .FALSE.
+    fesim%is_thermal               = .FALSE.
     
     fesim%skipFailed               = .FALSE.
     fesim%calculateTSE             = .FALSE.
