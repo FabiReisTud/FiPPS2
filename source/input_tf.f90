@@ -1882,20 +1882,719 @@ if (fesim%is_aeroload3d /= .false.) then
     end if
 end if
 
+!!!!!!!!!!!!!! Thermal: START
 if (fesim%is_thermal) then
     fname = 'thermal.fipps'
     open (unit=37,file=fname,status='old',action='read', iostat=io_error)
-    if (read_error /= 0) then
-        write(*,*) 'Error reading file ', fname
-        write(*,*) 'There was a problem reading the number of rows of the file'
+    if (io_error == 0) then
+        ! Errorhandling
+        read (37,*,iostat=read_error) rowcount
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was a problem reading the number of rows of the file'
+            err_code=1
+            goto 9999
+        end if
+        if (rowcount /= 1) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'Only one data line is required, contains ', rowcount
+            err_code=1
+            goto 9999
+        end if
+
+        allocate(fesim%thermal)
+        
+        ! Declare variables for keyword
+        character(80)        :: line_thermal
+        integer              :: i_enabled, i_coupled, i_theronly, i_maxiter
+        double precision     :: ctol, tref
+
+
+        ! Read the keyword line: 6 values, max. 10 characters each
+        read (37,'(A)',iostat=read_error) line_thermal
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was an error processing line 1'
+            err_code=1
+            goto 9999
+        end if
+
+         ! 1: enabled (default 0)
+        if (len_trim(line_thermal( 1:10)) == 0) then
+            i_enabled = 0
+        else
+            read (line_thermal( 1:10),*,iostat=read_error) i_enabled
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for enabled in line 1'
+                err_code=1
+                goto 9999
+            end if
+        end if
+
+        ! 2: coupled (default 0)
+        if (len_trim(line_thermal(11:20)) == 0) then
+            i_coupled = 0
+        else
+            read (line_thermal(11:20),*,iostat=read_error) i_coupled
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for coupled in line 1'
+                err_code=1
+                goto 9999
+            end if
+        end if
+
+        ! 3: theronly (default 0)
+        if (len_trim(line_thermal(21:30)) == 0) then
+            i_theronly = 0
+        else
+            read (line_thermal(21:30),*,iostat=read_error) i_theronly
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for theronly in line 1'
+                err_code=1
+                goto 9999
+            end if
+        end if
+
+        ! 4: maxiter (default from type)
+        if (len_trim(line_thermal(31:40)) == 0) then
+            i_maxiter = fesim%thermal%max_iterations
+        else
+            read (line_thermal(31:40),*,iostat=read_error) i_maxiter
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for maxiter in line 1'
+                err_code=1
+                goto 9999
+            end if
+        end if
+
+        ! 5: ctol (default from type)
+        if (len_trim(line_thermal(41:50)) == 0) then
+            ctol = fesim%thermal%tolerance
+        else
+            read (line_thermal(41:50),*,iostat=read_error) ctol
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for ctol in line 1'
+                err_code=1
+                goto 9999
+            end if
+        end if
+
+        ! 6: Tref (default from type)
+        if (len_trim(line_thermal(51:60)) == 0) then
+            tref = fesim%thermal%tref
+        else
+            read (line_thermal(51:60),*,iostat=read_error) tref
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for Tref in line 1'
+                err_code=1
+                goto 9999
+            end if
+        end if
+
+        close (37, iostat=io_error)
+        if (io_error /= 0) then
+            write(*,*) 'Error closing file ', fname
+            err_code=1
+            goto 9999
+        end if
+
+        ! Assign values
+        fesim%thermal%enabled              = (i_enabled  == 1)
+        fesim%thermal%coupled_to_structure = (i_coupled  == 1)
+        fesim%thermal%thermal_only         = (i_theronly == 1)
+        fesim%thermal%max_iterations       = i_maxiter
+        fesim%thermal%tolerance            = ctol
+        fesim%thermal%tref                 = tref
+
+    else
+        write (*,*) 'Error opening file ', fname
         err_code=1
         goto 9999
     end if
     ! Hier noch die ganzen thermal_type-Variablen auslesen
 end if
+
+if (fesim%is_mat_thermal) then
+    fname = 'matthermal.fipps'
+    open (unit=39,file=fname,status='old',action='read', iostat=io_error)
+    if (io_error == 0) then
+        read (39,*,iostat=read_error) rowcount
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was a problem reading the number of rows of the file'
+            err_code=1
+            goto 9999
+        end if
+        if (rowcount < 1) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'At least one thermal material must be defined'
+            err_code=1
+            goto 9999
+        end if
+        allocate(fesim%thermal%materials(1:rowcount))
+        ! set defaults (k has no default in the type definition)
+        do ii=1,rowcount
+            fesim%thermal%materials(ii)%mid = 0
+            fesim%thermal%materials(ii)%k   = 0.d0
+        end do
+        ! read values
+        do ii=1,rowcount
+            read (39,'(I10,E10.8)',iostat=read_error) fesim%thermal%materials(ii)%mid, fesim%thermal%materials(ii)%k
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error processing line', ii
+                err_code=1
+                goto 9999
+            end if
+        end do
+        close (39, iostat=io_error)
+        if (io_error /= 0) then
+            write(*,*) 'Error closing file ', fname
+            err_code=1
+            goto 9999
+        end if
+
+        ! Validation
+        do ii=1,rowcount
+            if (fesim%thermal%materials(ii)%mid < 2) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'TMID must be larger than 1 in line', ii
+                err_code=1
+                goto 9999
+            end if
+            if (fesim%thermal%materials(ii)%k <= 0.d0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Conductivity k must be positive in line', ii
+                err_code=1
+                goto 9999
+            end if
+        end do
+
+        ! Check for duplicate TMIDs
+        do ii=1,rowcount
+            do jj=ii+1,rowcount
+                if (fesim%thermal%materials(ii)%mid == fesim%thermal%materials(jj)%mid) then
+                    write(*,*) 'Error reading file ', fname
+                    write(*,*) 'Duplicate TMID defined: ', fesim%thermal%materials(ii)%mid
+                    err_code=1
+                    goto 9999
+                end if
+            end do
+        end do
+    else
+        write (*,*) 'Error opening file ', fname
+        err_code=1
+        goto 9999
+    end if
+end if
+
+if (fesim%is_mat_thermal_td) then
+    character(80)       :: line_td          
+    double precision    :: tvals(8), kvals(8)
+    integer             :: npts, npts_k
+    fname = 'matthermaltd.fipps'
+    open (unit=40,file=fname,status='old',action='read', iostat=io_error)
+    if (io_error == 0) then
+        read (40,*,iostat=read_error) rowcount
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was a problem reading the number of rows of the file'
+            err_code=1
+            goto 9999
+        end if
+        if (rowcount < 1) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'At least one temperature-dependent thermal material must be defined'
+            err_code=1
+            goto 9999
+        end if
+        allocate(fesim%thermal%materials_td(1:rowcount))
+
+        ! read values: 3 lines per material
+        do ii=1,rowcount
+            
+            ! ---- line 1: TMID_TD (I10) ----
+            read (40,'(I10)',iostat=read_error) fesim%thermal%materials_td(ii)%mid
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error reading TMID_TD of material', ii
+                err_code=1
+                goto 9999
+            end if
+
+            ! ---- line 2: temperatures T1..T8 (8 x 10 characters) ----
+            read (40,'(A)',iostat=read_error) line_td
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error reading the temperature line of material', ii
+                err_code=1
+                goto 9999
+            end if
+            npts = 0
+            do jj=1,8
+                if (len_trim(line_td((jj-1)*10+1:jj*10)) == 0) cycle
+                npts = npts + 1
+                read (line_td((jj-1)*10+1:jj*10),*,iostat=read_error) tvals(npts)
+                if (read_error /= 0) then
+                    write(*,*) 'Error reading file ', fname
+                    write(*,*) 'Invalid temperature value', jj, 'of material', ii
+                    err_code=1
+                    goto 9999
+                end if
+            end do
+
+            ! ---- line 3: conductivities k1..k8 (8 x 10 characters) ----
+            read (40,'(A)',iostat=read_error) line_td
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error reading the conductivity line of material', ii
+                err_code=1
+                goto 9999
+            end if
+            npts_k = 0
+            do jj=1,8
+                if (len_trim(line_td((jj-1)*10+1:jj*10)) == 0) cycle
+                npts_k = npts_k + 1
+                read (line_td((jj-1)*10+1:jj*10),*,iostat=read_error) kvals(npts_k)
+                if (read_error /= 0) then
+                    write(*,*) 'Error reading file ', fname
+                    write(*,*) 'Invalid conductivity value', jj, 'of material', ii
+                    err_code=1
+                    goto 9999
+                end if
+            end do
+
+            ! T- and k-lines must contain the same number of values
+            if (npts /= npts_k) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Number of temperatures and conductivities differ for material', ii
+                err_code=1
+                goto 9999
+            end if
+
+            ! fill the curve (thermal_curve_add sorts by temperature)
+            do jj=1,npts
+                call thermal_curve_add(fesim%thermal%materials_td(ii)%k, tvals(jj), kvals(jj))
+            end do
+
+        end do
+        close (40, iostat=io_error)
+        if (io_error /= 0) then
+            write(*,*) 'Error closing file ', fname
+            err_code=1
+            goto 9999
+        end if
+
+        ! ---------------- Validation (unchanged) ----------------
+        do ii=1,rowcount
+
+            if (fesim%thermal%materials_td(ii)%mid < 2) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'TMID_TD must be larger than 1 for material', ii
+                err_code=1
+                goto 9999
+            end if
+
+            if (fesim%thermal%materials_td(ii)%k%n < 2) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'At least 2 temperature/conductivity pairs are required for material', ii
+                err_code=1
+                goto 9999
+            end if
+
+            do jj=1,fesim%thermal%materials_td(ii)%k%n
+                if (fesim%thermal%materials_td(ii)%k%value(jj) <= 0.d0) then
+                    write(*,*) 'Error reading file ', fname
+                    write(*,*) 'Conductivity k must be positive for material', ii
+                    err_code=1
+                    goto 9999
+                end if
+            end do
+
+            ! duplicate temperatures would cause division by zero in thermal_curve_eval
+            do jj=1,fesim%thermal%materials_td(ii)%k%n-1
+                if (fesim%thermal%materials_td(ii)%k%T(jj) >= fesim%thermal%materials_td(ii)%k%T(jj+1)) then
+                    write(*,*) 'Error reading file ', fname
+                    write(*,*) 'Duplicate temperature values for material', ii
+                    err_code=1
+                    goto 9999
+                end if
+            end do
+
+            ! duplicate TMID_TD within temperature-dependent materials
+            do jj=ii+1,rowcount
+                if (fesim%thermal%materials_td(ii)%mid == fesim%thermal_materials_td(jj)%mid) then
+                    write(*,*) 'Error reading file ', fname
+                    write(*,*) 'Duplicate TMID_TD defined: ', fesim%thermal%materials_td(ii)%mid
+                    err_code=1
+                    goto 9999
+                end if
+            end do
+
+            ! TMID_TD must not clash with a constant thermal material
+            if (allocated(fesim%thermal%materials)) then
+                do jj=1,size(fesim%thermal%materials,1)
+                    if (fesim%thermal%materials_td(ii)%mid == fesim%thermal%materials(jj)%mid) then
+                        write(*,*) 'Error reading file ', fname
+                        write(*,*) 'TMID_TD ', fesim%thermal%materials_td(ii)%mid, &
+                                 & ' is also defined as constant thermal material'
+                        err_code=1
+                        goto 9999
+                    end if
+                end do
+            end if
+
+        end do
+
+        ! Temperature-dependent materials exist --> iterative solve is necessary
+        fesim%thermal%iterative = .true.
+
+    else
+        write (*,*) 'Error opening file ', fname
+        err_code=1
+        goto 9999
+    end if
+end if
+
+if (fesim%is_tbc) then
+    integer          :: nid_tbc
+    double precision :: tbc_temp
+    fname = 'tbc.fipps'
+    open (unit=37,file=fname,status='old',action='read', iostat=io_error)
+    if (io_error == 0) then
+        read (37,*,iostat=read_error) rowcount
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was a problem reading the number of rows of the file'
+            err_code=1
+            goto 9999
+        end if
+        if (rowcount < 1) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'At least one data line is required'
+            err_code=1
+            goto 9999
+        end if
+        allocate(fesim%thermal%tbcs(1:rowcount))
+
+        do ii=1,rowcount
+            read (37,'(A)',iostat=read_error) line_thermal
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error processing line', ii
+                err_code=1
+                goto 9999
+            end if
+
+            ! 1: NID (max. 10 characters)
+            read (line_thermal( 1:10),*,iostat=read_error) nid_tbc
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for NID in line', ii
+                err_code=1
+                goto 9999
+            end if
+
+            ! 2: T (max. 10 characters, exponent format possible)
+            read (line_thermal(11:20),*,iostat=read_error) tbc_temp
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for T in line', ii
+                err_code=1
+                goto 9999
+            end if
+
+            fesim%thermal%tbcs(ii)%nid         = nid_tbc
+            fesim%thermal%tbcs(ii)%temperature = tbc_temp
+        end do
+
+        close (37, iostat=io_error)
+        if (io_error /= 0) then
+            write(*,*) 'Error closing file ', fname
+            err_code=1
+            goto 9999
+        end if
+
+        ! Validation: node IDs must exist in the model
+        do ii=1,rowcount
+            if ((fesim%thermal%tbcs(ii)%nid < 1) .or. &
+              & (fesim%thermal%tbcs(ii)%nid > fesim%num_nodes)) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Node ID ', fesim%thermal%tbcs(ii)%nid, &
+                         & ' in line ', ii, ' is not defined in the model'
+                err_code=1
+                goto 9999
+            end if
+        end do
+
+        ! Warning on duplicate node IDs (last entry wins)
+        do ii=1,rowcount
+            do jj=ii+1,rowcount
+                if (fesim%thermal%tbcs(ii)%nid == fesim%thermal%tbcs(jj)%nid) then
+                    write(*,*) 'Warning: multiple temperature BCs on node ', &
+                             & fesim%thermal%tbcs(ii)%nid, &
+                             & '- last definition is used'
+                end if
+            end do
+        end do
+
+    else
+        write (*,*) 'Error opening file ', fname
+        err_code=1
+        goto 9999
+    end if
+end if
+
+if (fesim%is_convection_bc) then
+    fname = 'convectionbc.fipps'
+    open (unit=39, file=fname, status='old', action='read', iostat=io_error)
+    if (io_error == 0) then
+        read (39,*,iostat=read_error) rowcount
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was a problem reading the number of rows of the file'
+            close(39)
+            err_code=1
+            goto 9999
+        end if
+        if (rowcount < 1) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'At least one data line is required'
+            close(39)
+            err_code=1
+            goto 9999
+        end if
+
+        allocate(fesim%thermal%convections(1:rowcount))
+
+        do ii = 1, rowcount
+            read (39,'(A)',iostat=read_error) line_conv
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error processing line', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+
+            ! 1: EID (Element-ID), columns 1-10
+            if (len_trim(line_conv(1:10)) == 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Blank EID field in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+            read (line_conv(1:10),*,iostat=read_error) eid
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for EID in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+
+            ! 2: FID (Face-ID), columns 11-20
+            if (len_trim(line_conv(11:20)) == 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Blank FID field in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+            read (line_conv(11:20),*,iostat=read_error) face
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for FID in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+
+            ! 3: h (film coefficient), columns 21-30
+            if (len_trim(line_conv(21:30)) == 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Blank h field in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+            read (line_conv(21:30),*,iostat=read_error) h
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for h in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+
+            ! 4: Tamb (ambient temperature), columns 31-40
+            if (len_trim(line_conv(31:40)) == 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Blank Tamb field in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+            read (line_conv(31:40),*,iostat=read_error) T_amb
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for Tamb in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+
+            ! TODO: Validate that eid exists in the element table here
+            ! TODO: Validate that face is a valid face number for the
+            !       corresponding element type here (e.g. 1-6 for lsolid20)
+
+            ! Validation: film coefficient must not be negative
+            if (h < 0.d0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Film coefficient h must not be negative in line ', ii
+                close(39)
+                err_code=1
+                goto 9999
+            end if
+
+            ! Assign values
+            fesim%thermal%convections(ii)%eid   = eid
+            fesim%thermal%convections(ii)%face  = face
+            fesim%thermal%convections(ii)%h     = h
+            fesim%thermal%convections(ii)%T_amb = T_amb
+        end do
+
+        close (39, iostat=io_error)
+        if (io_error /= 0) then
+            write(*,*) 'Error closing file ', fname
+            err_code=1
+            goto 9999
+        end if
+    else
+        write (*,*) 'Error opening file ', fname
+        err_code=1
+        goto 9999
+    end if
+end if
+
+if (fesim%is_flux_bc) then
+    fname = 'fluxbc.fipps'
+    open (unit=40, file=fname, status='old', action='read', iostat=io_error)
+    if (io_error == 0) then
+        read (40,*,iostat=read_error) rowcount
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was a problem reading the number of rows of the file'
+            close(40)
+            err_code=1
+            goto 9999
+        end if
+        if (rowcount < 1) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'At least one data line is required'
+            close(40)
+            err_code=1
+            goto 9999
+        end if
+
+        allocate(fesim%thermal%fluxes(1:rowcount))
+
+        do ii_flux = 1, rowcount
+            read (40,'(A)',iostat=read_error) line_flux
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error processing line', ii_flux
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+
+            ! 1: EID (Element-ID), columns 1-10
+            if (len_trim(line_flux(1:10)) == 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Blank EID field in line ', ii_flux
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+            read (line_flux(1:10),*,iostat=read_error) eid
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for EID in line ', ii_flux
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+
+            ! 2: FID (Face-ID), columns 11-20
+            if (len_trim(line_flux(11:20)) == 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Blank FID field in line ', ii_flux
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+            read (line_flux(11:20),*,iostat=read_error) face
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for FID in line ', ii_flux
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+
+            ! 3: q (heat flux), columns 21-30
+            if (len_trim(line_flux(21:30)) == 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Blank q field in line ', ii_flux
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+            read (line_flux(21:30),*,iostat=read_error) q
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'Invalid value for q in line ', ii_flux
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+
+            ! TODO: Validate that eid exists in the element table here
+            ! TODO: Validate that face is a valid face number for the
+            !       corresponding element type (e.g. 1-6 for lsolid20)
+
+            ! Assign values
+            fesim%thermal%fluxes(ii_flux)%eid  = eid
+            fesim%thermal%fluxes(ii_flux)%face = face
+            fesim%thermal%fluxes(ii_flux)%q    = q
+        end do
+
+        close (40, iostat=io_error)
+        if (io_error /= 0) then
+            write(*,*) 'Error closing file ', fname
+            err_code=1
+            goto 9999
+        end if
+    else
+        write (*,*) 'Error opening file ', fname
+        err_code=1
+        goto 9999
+    end if
+end if
+
+
 !hier die weiteren Randbedingungen, Materialien einlesen
 !diese weiteren karten auch mit der input_process_line-subroutine aus der control auslesen lassen
-!deren is_... variablen in fesimulation_typen setzen
+
+!!!!!!!!!!!!!! Thermal: END
 
 !
 ! =================================================================================================

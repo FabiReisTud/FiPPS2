@@ -14,36 +14,31 @@ module thermal_typen
 
   type thermal_material_type ! Temperaturunabhängiges thermisches Material
     integer :: mid = 0
-    double precision :: tref = 0.0d0
     double precision :: k
   end type thermal_material_type
 
   type thermal_material_td_type ! Temperaturabhängig thermisches Material
     integer :: mid = 0
-    double precision :: tref = 0.0d0
     type(thermal_curve_type) :: k
   end type thermal_material_td_type
 
   type thermal_tbc_type
-    integer :: lid = 0  ! LoadID
     integer :: nid = 0  ! NodeID
     double precision :: temperature = 0.d0 ! Temperature
   end type thermal_tbc_type
 
-  type thermal_flux_bc_type
-    integer :: lid = 0              ! LoadID
-    integer :: eid = 0              ! ID of element
-    integer :: face = 0             ! ID of element face
-    double precision :: q = 0.d0    ! Heat flux across face
-  end type thermal_flux_bc_type
-
   type thermal_convection_bc_type
-    integer :: lid = 0              ! LoadID
     integer :: eid = 0              ! ID of element
     integer :: face = 0             ! ID of element face
     double precision :: h = 0.d0    ! Film coefficient, q = Q/A = h * (T - T_amb)
     double precision :: T_amb = 0.d0    ! Ambient temperature at Face
   end type thermal_convection_bc_type
+
+  type thermal_flux_bc_type
+    integer :: eid = 0              ! ID of element
+    integer :: face = 0             ! ID of element face
+    double precision :: q = 0.d0    ! Heat flux across face
+  end type thermal_flux_bc_type
 
   type thermal_state_type
     logical :: enabled = .false. ! Is thermal calculation supposed to be performed?

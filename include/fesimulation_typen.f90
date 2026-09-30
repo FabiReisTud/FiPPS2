@@ -107,7 +107,14 @@ type fe_simulation
   logical                       :: is_failure
   logical                       :: is_coord
   logical                       :: is_multistep
+  ! Thermal: Start
   logical                       :: is_thermal
+  logical                       :: is_mat_thermal
+  logical                       :: is_mat_thermal_td
+  logical                       :: is_tbc
+  logical                       :: is_flux_bc
+  logical                       :: is_convection_bc
+  ! Thermal: End
   
   
   ! Hilfsgrößen, um Aufwand zu sparen
@@ -233,8 +240,15 @@ contains
     fesim%is_contact_node_quad8    = .FALSE.
     fesim%is_contact_node_lsolid20 = .FALSE.
     fesim%is_multistep             = .FALSE.
+    ! Thermal: START
     fesim%is_thermal               = .FALSE.
-    
+    fesim%is_mat_thermal           = .FALSE.
+    fesim%is_mat_thermal_td        = .FALSE.
+    fesim%is_tbc                   = .FALSE.
+    fesim%is_convection_bc         = .FALSE.
+    fesim%is_flux_bc               = .FALSE.
+    ! Thermal: END
+
     fesim%skipFailed               = .FALSE.
     fesim%calculateTSE             = .FALSE.
     fesim%calculateElementalTSE    = .FALSE.
