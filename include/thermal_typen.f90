@@ -234,18 +234,20 @@ contains
     if (allocated(state%heat_sources)) deallocate(state%heat_sources)
   end subroutine thermal_free_state
 
+  subroutine bcast_thermal(state,is_thermal,is_mat_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc)
 #include "petsc/finclude/petscsys.h"
-  subroutine bcast_thermal(state)
     use petscsys
     implicit none
     type(thermal_state_type), intent(inout) :: state
     PetscMPIInt :: rank
     PetscErrorCode :: ierr
     integer :: i,n,ii
+    integer :: num_mat_thermal,num_mat_thermal_td,num_tbc,num_convection_bc,num_flux_bc
+    logical :: is_thermal,is_mat_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc
 
 #if !defined (PETSC_HAVE_MPIUNI)
     call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
-
+    ! broadcast flags
     call MPI_Bcast(state%enabled,1,MPI_LOGICAL,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
     call MPI_Bcast(state%coupled_to_structure,1,MPI_LOGICAL,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
     call MPI_Bcast(state%thermal_only,1,MPI_LOGICAL,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
@@ -253,7 +255,7 @@ contains
     call MPI_Bcast(state%tolerance,1,MPI_DOUBLE_PRECISION,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
     call MPI_Bcast(state%relaxation,1,MPI_DOUBLE_PRECISION,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
     call MPI_Bcast(state%tref,1,MPI_DOUBLE_PRECISION,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
-
+    ! broadcast temperature size
     if (rank == 0) then
       if (allocated(state%temperature)) then
         n = size(state%temperature)
@@ -262,6 +264,7 @@ contains
       end if
     end if
     call MPI_Bcast(n,1,MPI_INTEGER,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
+    ! remove temperature from other ranks
     if (rank /= 0) then
       if (allocated(state%temperature)) deallocate(state%temperature)
       if (allocated(state%temperature_old)) deallocate(state%temperature_old)
@@ -275,10 +278,32 @@ contains
       allocate(state%temperature_old(n))
       state%temperature_old = state%temperature
     end if
+    ! broadcast temp to other ranks, why is it necessary?..maybe to update after an iteration!
     if (n > 0) then
       call MPI_Bcast(state%temperature,n,MPI_DOUBLE_PRECISION,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
       call MPI_Bcast(state%temperature_old,n,MPI_DOUBLE_PRECISION,0,PETSC_COMM_WORLD,ierr); CHKERRQ(ierr)
     end if
+    !! broadcast the mat_thermals
+    !if (is_mat_thermal) then
+    !  if (rank .eq. 0) num_mat_thermal = size()
+    !  call MPI_Bcast (nummat1, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !  if (rank .ne. 0) allocate(state%materials)
+    !  
+    !  do ii = 1,nummat1
+    !  
+    !      call MPI_Bcast (materials%mat1s(ii)%mid,  1,          MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !      call MPI_Bcast (materials%mat1s(ii)%ym,   1, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !      call MPI_Bcast (materials%mat1s(ii)%sm,   1, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !      call MPI_Bcast (materials%mat1s(ii)%nu,   1, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !      call MPI_Bcast (materials%mat1s(ii)%rho,  1, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !      call MPI_Bcast (materials%mat1s(ii)%ath,  1, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !      call MPI_Bcast (materials%mat1s(ii)%tref, 1, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !      call MPI_Bcast (materials%mat1s(ii)%ge,   1, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !      call MPI_Bcast (materials%mat1s(ii)%fid,  4, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    !  
+    !  end do
+    !end if
+
 #endif
   end subroutine bcast_thermal
 

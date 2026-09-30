@@ -368,6 +368,15 @@ contains
     call MPI_Bcast (fesim%calculateElementalTSE, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (  fesim%calculateReactForce, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (     fesim%globalReactForce, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+
+    ! Thermal: START
+    call MPI_Bcast (           fesim%is_thermal, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    call MPI_Bcast (       fesim%is_mat_thermal, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    call MPI_Bcast (    fesim%is_mat_thermal_td, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    call MPI_Bcast (               fesim%is_tbc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    call MPI_Bcast (     fesim%is_convection_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    call MPI_Bcast (           fesim%is_flux_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    ! Thermal: END
     
     
     call bcast_knoten(fesim%knoten,fesim%is_node)
@@ -381,6 +390,8 @@ contains
     call bcast_rb(fesim%randbedingungen,fesim%is_mpc)
     call bcast_ergebnisse(fesim%ergebnisse)
     !residuals
+    !thermal
+    !call bcast_thermal(fesim%thermal,fesim%is_thermal,fesim%is_mat_thermal,fesim%is_mat_thermal_td,fesim%is_tbc,fesim%is_convection_bc,fesim%is_flux_bc)
 
 #endif
     

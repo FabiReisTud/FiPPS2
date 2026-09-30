@@ -143,7 +143,7 @@ contains
   
   subroutine bcast_knoten(nodes,is_node)
   
-#include "petsc/finclude/petscsys.h"
+    #include "petsc/finclude/petscsys.h"
     use petscsys
     use globale_variablen
   
@@ -156,7 +156,7 @@ contains
     PetscErrorCode      :: ierr
     integer             :: node_num
     
-#if !defined (PETSC_HAVE_MPIUNI)
+    #if !defined (PETSC_HAVE_MPIUNI)
 
     if (mpi_type_inited .eq. .false.) then
       call knoten_mpi_init()
@@ -175,7 +175,7 @@ contains
       end if
       call MPI_Bcast (     nodes%nodes, node_num, MPI_NODE_TYPE, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     end if
-#endif
+  #endif
   end subroutine bcast_knoten
   
   subroutine free_mem_knoten(knoten)

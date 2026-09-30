@@ -291,7 +291,7 @@ contains
 
   subroutine bcast_element_typen(elems,is_beam2,is_quad8,is_lsolid20)
   
-#include "petsc/finclude/petscsys.h"
+    #include "petsc/finclude/petscsys.h"
     use petscsys
     use globale_variablen
   
@@ -306,7 +306,7 @@ contains
     PetscErrorCode      :: ierr
     integer             :: beam2_num, quad8_num, lsolid20_num
     
-#if !defined (PETSC_HAVE_MPIUNI)
+    #if !defined (PETSC_HAVE_MPIUNI)
 
     if (mpi_type_inited .eq. .false.) then
       call element_mpi_init()
@@ -338,7 +338,7 @@ contains
       if (rank .ne. 0) allocate(elems%lsolid20s(lsolid20_num))
       call MPI_Bcast (elems%lsolid20s, lsolid20_num, MPI_LSOLID20_TYPE, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     end if
-#endif
+    #endif
   end subroutine bcast_element_typen
   
   subroutine free_mem_element(elemente)
