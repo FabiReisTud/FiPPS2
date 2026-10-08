@@ -27,8 +27,8 @@ REVISION=R451
 #===============================================================================
 
 # fast - without debugging options
-# PETSC_DIR   = /mnt/appl/x86_64/petsc/3.22.5
-# SLEPC_DIR   = /mnt/appl/x86_64/slepc/3.22.2_mod
+PETSC_DIR   = /mnt/appl/x86_64/petsc/3.22.5
+SLEPC_DIR   = /mnt/appl/x86_64/slepc/3.22.2
 APAME_LIB   = ../ApameSolver/src/apame.a
 PANEL2D_LIB = ../PANEL2D/panel2d.a
 XFOILWRAPPER_LIB = ../XfoilWrapper/xfoilwrapper.a
