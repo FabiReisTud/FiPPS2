@@ -1,0 +1,1 @@
+CHARACTER(len=10), PARAMETER :: version="2.0.0-R6969"

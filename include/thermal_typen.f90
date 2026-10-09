@@ -3,7 +3,6 @@
 ! Steady thermal conduction and thermo-mechanical coupling
 !
 module thermal_typen
-
   implicit none
 
   type thermal_curve_type
@@ -246,71 +245,71 @@ contains
   subroutine thermal_mpi_init()
 #include "petsc/finclude/petscsys.h"
 #if !defined (PETSC_HAVE_MPIUNI)
-    
+
       use petscsys
-    
+
       implicit none
-    
+
       INTEGER                             :: count, ii, ierror
       INTEGER, dimension(:), allocatable  :: array_of_blockl, array_of_types
       INTEGER(kind=MPI_ADDRESS_KIND), dimension(:), allocatable :: array_of_disp, address
-    
+
       TYPE(thermal_material_type)      :: mat
       TYPE(thermal_tbc_type)           :: tbc
       TYPE(thermal_convection_bc_type) :: conv
       TYPE(thermal_flux_bc_type)       :: flux
-    
+
       !***************************************************************************
       ! thermal_material_type: mid, k
       !***************************************************************************
       count = 2
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-    
+
       array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
       CALL MPI_GET_ADDRESS(mat%mid, address(1), ierror)
       array_of_types (2) = MPI_DOUBLE_PRECISION; array_of_blockl(2) = 1
       CALL MPI_GET_ADDRESS(mat%k, address(2), ierror)
-    
+
       array_of_disp(1) = 0
       DO ii = 2, count
         array_of_disp(ii) = address(ii) - address(1)
       END DO
-    
+
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_material_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_material_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-    
+
       !***************************************************************************
       ! thermal_tbc_type: nid, temperature
       !***************************************************************************
       count = 2
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-    
+
       array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
       CALL MPI_GET_ADDRESS(tbc%nid, address(1), ierror)
       array_of_types (2) = MPI_DOUBLE_PRECISION; array_of_blockl(2) = 1
       CALL MPI_GET_ADDRESS(tbc%temperature, address(2), ierror)
-    
+
       array_of_disp(1) = 0
       DO ii = 2, count
         array_of_disp(ii) = address(ii) - address(1)
       END DO
-    
+
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_tbc_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_tbc_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-    
+
       !***************************************************************************
       ! thermal_convection_bc_type: eid, face, h, T_amb
       !***************************************************************************
       count = 4
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-    
+
       array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
       CALL MPI_GET_ADDRESS(conv%eid, address(1), ierror)
       array_of_types (2) = MPI_INTEGER;          array_of_blockl(2) = 1
@@ -319,41 +318,41 @@ contains
       CALL MPI_GET_ADDRESS(conv%h, address(3), ierror)
       array_of_types (4) = MPI_DOUBLE_PRECISION; array_of_blockl(4) = 1
       CALL MPI_GET_ADDRESS(conv%T_amb, address(4), ierror)
-    
+
       array_of_disp(1) = 0
       DO ii = 2, count
         array_of_disp(ii) = address(ii) - address(1)
       END DO
-    
+
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_convection_bc_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_convection_bc_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-    
+
       !***************************************************************************
       ! thermal_flux_bc_type: eid, face, q
       !***************************************************************************
       count = 3
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-    
+
       array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
       CALL MPI_GET_ADDRESS(flux%eid, address(1), ierror)
       array_of_types (2) = MPI_INTEGER;          array_of_blockl(2) = 1
       CALL MPI_GET_ADDRESS(flux%face, address(2), ierror)
       array_of_types (3) = MPI_DOUBLE_PRECISION; array_of_blockl(3) = 1
       CALL MPI_GET_ADDRESS(flux%q, address(3), ierror)
-    
+
       array_of_disp(1) = 0
       DO ii = 2, count
         array_of_disp(ii) = address(ii) - address(1)
       END DO
-    
+
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_flux_bc_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_flux_bc_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-    
+
     #endif
   end subroutine thermal_mpi_init
 
@@ -507,18 +506,18 @@ contains
   function thermal_is_td(state) result(is_td)
     type(thermal_state_type), intent(in) :: state
     logical :: is_td
-    
+
     is_td = (allocated(state%materials_td) .and. size(state%materials_td) > 0)
-    
+
   end function thermal_is_td
 
   function thermal_is_conv(state) result(is_conv)
     type(thermal_state_type), intent(in) :: state
     logical :: is_conv
-    
+
     is_conv = (allocated(state%convections) .and. size(state%convections) > 0)
-    
+
   end function thermal_is_conv
-  
+
 
   end module thermal_typen
