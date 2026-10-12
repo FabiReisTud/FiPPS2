@@ -1958,7 +1958,7 @@ if (fesim%is_mat_thermal) then
         end do
         ! read values
         do ii=1,rowcount
-            read (39,'(I10,E10.8)',iostat=read_error) fesim%thermal%materials(ii)%mid, fesim%thermal%materials(ii)%k
+            read (39,'(I10,E23.16)',iostat=read_error) fesim%thermal%materials(ii)%mid, fesim%thermal%materials(ii)%k
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'There was an error processing line', ii
@@ -2261,7 +2261,7 @@ if (fesim%is_convection_bc) then
         allocate(fesim%thermal%convections(1:rowcount))
 
         do ii = 1, rowcount
-            read (39,'(2I10,"E23.16)',iostat=read_error) &
+            read (39,'(2I10,E23.16)',iostat=read_error) &
                 & fesim%thermal%convections%eid, &
                 & fesim%thermal%convections%face, &
                 & fesim%thermal%convections%h, &
@@ -2280,7 +2280,7 @@ if (fesim%is_convection_bc) then
             !       corresponding element type here (e.g. 1-6 for lsolid20)
 
             ! Validation: film coefficient must not be negative
-            if (h < 0.d0) then
+            if (fesim%thermal%convections(ii)%h < 0.d0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'Film coefficient h must not be negative in line ', ii
                 close(39)
