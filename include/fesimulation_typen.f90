@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -49,9 +49,9 @@ use ergebnis_typen
 use thermal_typen
 
 implicit none
-  
+
 type fe_simulation
-  
+
   ! Notwendige Daten einer FE-Simulation
   type(nodes_type)              :: knoten
   type(elemente_type)           :: elemente
@@ -115,8 +115,8 @@ type fe_simulation
   logical                       :: is_flux_bc
   logical                       :: is_convection_bc
   ! Thermal: End
-  
-  
+
+
   ! Hilfsgrößen, um Aufwand zu sparen
   integer                       :: num_dof              ! number of dof in whole structure
   integer                       :: num_nodes            ! number of nodes
@@ -124,7 +124,7 @@ type fe_simulation
   integer                       :: num_loadcases        ! number of loadcases
   integer                       :: num_subcases         ! number of subcases
   integer                       :: num_cps              ! number of coulings(-sets)
-  
+
   ! Einstellungen der Berechnung und Ausgabe
   integer                       :: sol
   integer                       :: numEigVal = 1        ! number of Eigenvalues
@@ -135,10 +135,10 @@ type fe_simulation
   logical                       :: calculateTSE         ! true, wenn Gesamtdehnungsenergie (Total Strain Energy) berechnet werden soll
 
   logical                       :: calculateElementalTSE! true, wenn elementweise Gesamtdehnungsenergie (Total Strain Energy) berechnet werden soll
-  
+
   logical                       :: calculateReactForce  ! true, wenn die Reaktionskräfte in einem zweiten Berechnungsschritt bestimmt werden sollen
   logical                       :: globalReactForce     ! true, wenn die Reaktionskräfte im globalen statt im Knotenkoordinatensystem ausgegeben werden sollen
-  
+
   double precision              :: aeroDisplEps         ! Konvergenzkriterium für die Fluid-Strukturkopplung
 
 end type fe_simulation
@@ -153,23 +153,23 @@ contains
   subroutine init_default(fesim)
     ! =================================================================================================
     !
-    !	Header:		
+    !	Header:
     !
-    !	Content:	
+    !	Content:
     !
-    !	Input:		
+    !	Input:
     !
-    !	Output:		
+    !	Output:
     !
-    !	Internal:	
+    !	Internal:
     !
-    !	Calls:		
+    !	Calls:
     !
-    !	Called by:	
+    !	Called by:
     !
-    !	Author:		
+    !	Author:
     !
-    !	Revision:	
+    !	Revision:
     !
     ! =================================================================================================
     !
@@ -200,9 +200,9 @@ contains
     fesim%sol           = 1                  ! solution type; 1-linear static, 2-prelinearized buckling
     fesim%numEigVal     = 1                  ! number of Eigenvalues
     fesim%shellResPos   = 0                  ! Position der Ergebnisse für Schalenelemente 0 - MID, 1 - TOP,
-    
+
     fesim%blocksize = HUGE(fesim%blocksize)  ! set the blocksize to the maximum integer number
-    
+
     fesim%is_beam2                 = .FALSE.
     fesim%is_coord                 = .FALSE.
     fesim%is_coupling              = .FALSE.
@@ -254,15 +254,15 @@ contains
     fesim%calculateElementalTSE    = .FALSE.
     fesim%calculateReactForce      = .FALSE.
     fesim%globalReactForce         = .FALSE.
-    
+
     fesim%aeroDisplEps  = 0.01d0
-    
+
     fesim%internals%failed = .FALSE.
     fesim%internals%indexBeforeAeroP8Load = 0
     fesim%internals%highestLID = 0
     fesim%internals%indexBeforeAeroLoad = 0
     fesim%internals%highestLIDtemp = 0
-    
+
     fesim%ausgabe%outputVTK = .false.
     fesim%ausgabe%outputUser = .false.
     fesim%ausgabe%outputShort = .false.
@@ -288,32 +288,32 @@ contains
     9999 continue
 
     if (err_code /= 0) then
-    
+
       write(*,*)                      'An error occured in subroutine'
       write(*,*)                      'init_default'
       write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
       write(*,*)                      'exit program '
       stop
-    
+
     end if
 
   end subroutine init_default
 
   subroutine bcast_fesim(fesim)
-    
+
 #include "petsc/finclude/petscsys.h"
     use petscsys
-    
+
     implicit none
 
     type(fe_simulation) :: fesim
     PetscMPIInt     :: rank
     PetscErrorCode  :: ierr
-    
+
 #if !defined (PETSC_HAVE_MPIUNI)
-    
+
     call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
-    
+
     call MPI_Bcast (              fesim%num_dof, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (            fesim%num_nodes, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (         fesim%num_elements, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
@@ -324,8 +324,8 @@ contains
     call MPI_Bcast (            fesim%numEigVal, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (          fesim%shellResPos, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (            fesim%blocksize, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
-     
-    
+
+
     call MPI_Bcast (              fesim%is_node, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (             fesim%is_beam2, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (             fesim%is_quad8, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
@@ -377,8 +377,8 @@ contains
     call MPI_Bcast (     fesim%is_convection_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (           fesim%is_flux_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     ! Thermal: END
-    
-    
+
+
     call bcast_knoten(fesim%knoten,fesim%is_node)
     call bcast_element_typen(fesim%elemente,fesim%is_beam2,fesim%is_quad8,fesim%is_lsolid20)
     call bcast_eigenschaften(fesim%eigenschaften,fesim%is_pbeam,fesim%is_pshell,fesim%is_pcomp,fesim%is_plsolid)
@@ -394,15 +394,15 @@ contains
     call bcast_thermal(fesim%thermal,fesim%is_thermal,fesim%is_mat_thermal,fesim%is_mat_thermal_td,fesim%is_tbc,fesim%is_convection_bc,fesim%is_flux_bc)
 
 #endif
-    
+
   end subroutine bcast_fesim
-  
+
   subroutine free_mem_fesim(fesim)
-  
-    implicit none 
-    
+
+    implicit none
+
     type(fe_simulation) :: fesim
-    
+
     call free_mem_eigenschaften(fesim%eigenschaften)
     call free_mem_element(fesim%elemente)
     call free_mem_fail(fesim%versagenskriterien)
@@ -414,6 +414,7 @@ contains
     call free_mem_rb(fesim%randbedingungen)
     call free_mem_residual(fesim%residuals)
     call free_mem_ergebnisse(fesim%ergebnisse)
+    call free_mem_thermal(fesim%thermal)
 
   end subroutine free_mem_fesim
 

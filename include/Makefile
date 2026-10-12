@@ -20,6 +20,7 @@ MODULE := \
  internals_typen.o \
  ausgabe_typen.o \
  ergebnis_typen.o \
+ thermal_typen.o \
  fesimulation_typen.o \
  pre_assemble_types.o \
  vtk_variablen.o \

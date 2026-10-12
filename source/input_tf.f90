@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -49,27 +49,27 @@ implicit none
 
 !
 ! =================================================================================================
-! 
+!
 ! Data types
 !
 ! Input
-! 
-! 
+!
+!
 ! Output
-! 
+!
 !
 ! Input+Output
 !
 type(fe_simulation)     :: fesim
-! 
+!
 ! Inner
-! 
+!
 integer, parameter      :: n=255                            ! maximum number of words
 character(50)           :: fname, line, control_array(n)    ! filename with maximum length of (XX) characters
 integer                 :: io_error, read_error             ! Error-handling parameters
 integer                 :: rowcount
 integer                 :: nr_lines, nr_words               ! Steuer-Datei Parameter
-integer                 :: ii,jj
+integer                 :: ii,jj,nn,ll,mm
 integer                 :: elcount                          ! Counts overall element number
 integer                 :: err_code=0
 character(3)            :: angleType
@@ -1024,7 +1024,7 @@ if (fesim%is_failure /= .false.) then
                         goto 9999
                     end if
                 end do
-                
+
                 if (count_tresca .gt. 0) allocate(fesim%versagenskriterien%failTrescas(1:count_tresca))
                 if (count_mises .gt. 0) allocate(fesim%versagenskriterien%failMises(1:count_mises))
                 if (count_maxpstress .gt. 0) allocate(fesim%versagenskriterien%failMaxprincstresses(1:count_maxpstress))
@@ -1037,7 +1037,7 @@ if (fesim%is_failure /= .false.) then
                 if (count_maxstrain3d .gt. 0) allocate(fesim%versagenskriterien%failMaxStrain3Ds(1:count_maxstrain3d))
                 if (count_tsaiwu3d .gt. 0) allocate(fesim%versagenskriterien%failTsaiWu3Ds(1:count_tsaiwu3d))
                 rewind(38)
-                read (38,*) 
+                read (38,*)
                 count_tresca = 0
                 count_mises = 0
                 count_maxpstress = 0
@@ -1059,54 +1059,54 @@ if (fesim%is_failure /= .false.) then
                     end if
                     read (line_long,'(10X,A10)',iostat=read_error) failureType
                     if (TRIM(ADJUSTL(failureType)) == "tresca") then
-                    
+
                         count_tresca = count_tresca + 1
                         read (line_long,'(I10,10x,1E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failTrescas(count_tresca)%fid,fesim%versagenskriterien%failTrescas(count_tresca)%ys
-                          
+
                     else if (TRIM(ADJUSTL(failureType)) == "mises") then
-                    
+
                         count_mises = count_mises + 1
                         read (line_long,'(I10,10x,1E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failMises(count_mises)%fid,fesim%versagenskriterien%failMises(count_mises)%ys
-                          
+
                     else if (TRIM(ADJUSTL(failureType)) == "maxpstress") then
-                    
+
                         count_maxpstress = count_maxpstress + 1
                         read (line_long,'(I10,10x,2E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failMaxprincstresses(count_maxpstress)%fid,fesim%versagenskriterien%failMaxprincstresses(count_maxpstress)%ys,fesim%versagenskriterien%failMaxprincstresses(count_maxpstress)%ysC
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "puck") then
-                    
+
                         count_puck = count_puck + 1
                         read (line_long,'(I10,10x,9E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failPucks(count_puck)%fid,fesim%versagenskriterien%failPucks(count_puck)%RParTen,fesim%versagenskriterien%failPucks(count_puck)%RParCom, &
                           & fesim%versagenskriterien%failPucks(count_puck)%RNorTen,fesim%versagenskriterien%failPucks(count_puck)%RNorCom,fesim%versagenskriterien%failPucks(count_puck)%RShear, &
                           & fesim%versagenskriterien%failPucks(count_puck)%Pspd,fesim%versagenskriterien%failPucks(count_puck)%Pspz,fesim%versagenskriterien%failPucks(count_puck)%a0, &
                           & fesim%versagenskriterien%failPucks(count_puck)%lambdamin
-                          
+
                     else if (TRIM(ADJUSTL(failureType)) == "hill") then
-                    
+
                         count_hill = count_hill + 1
                         read (line_long,'(I10,10x,6E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failHills(count_hill)%fid,fesim%versagenskriterien%failHills(count_hill)%RParTen,fesim%versagenskriterien%failHills(count_hill)%RParCom, &
                           & fesim%versagenskriterien%failHills(count_hill)%RNorTen,fesim%versagenskriterien%failHills(count_hill)%RNorCom,fesim%versagenskriterien%failHills(count_hill)%RShear, &
                           & fesim%versagenskriterien%failHills(count_hill)%F12star
-                          
+
                     else if (TRIM(ADJUSTL(failureType)) == "norris") then
-                    
+
                         count_norris = count_norris + 1
                         read (line_long,'(I10,10x,3E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failNorris(count_norris)%fid,fesim%versagenskriterien%failNorris(count_norris)%RPar, &
                           & fesim%versagenskriterien%failNorris(count_norris)%RNor, &
                           & fesim%versagenskriterien%failNorris(count_norris)%RShear
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "fibre") then
-                    
+
                         count_fibre = count_fibre + 1
                         read (line_long,'(I10,10x,2E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failFibres(count_fibre)%fid,fesim%versagenskriterien%failFibres(count_fibre)%RParTen,fesim%versagenskriterien%failFibres(count_fibre)%RParCom
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "maxstrain") then
 
                         count_maxstrain = count_maxstrain + 1
@@ -1115,15 +1115,15 @@ if (fesim%is_failure /= .false.) then
                           & fesim%versagenskriterien%failMaxStrains(count_maxstrain)%epsParCom, fesim%versagenskriterien%failMaxStrains(count_maxstrain)%epsNorTen, &
                           & fesim%versagenskriterien%failMaxStrains(count_maxstrain)%epsNorCom,fesim%versagenskriterien%failMaxStrains(count_maxstrain)%epsShear, &
                           & fesim%versagenskriterien%failMaxStrains(count_maxstrain)%useGlobal
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "cuntze") then
-                    
+
                         count_cuntze = count_cuntze + 1
                         read (line_long,'(I10,10x,9E23.16)',iostat=read_error)  &
                         & fesim%versagenskriterien%failCuntzes(count_cuntze)%fid,fesim%versagenskriterien%failCuntzes(count_cuntze)%RParTen,fesim%versagenskriterien%failCuntzes(count_cuntze)%RParCom, &
                         & fesim%versagenskriterien%failCuntzes(count_cuntze)%RNorTen,fesim%versagenskriterien%failCuntzes(count_cuntze)%RNorCom,fesim%versagenskriterien%failCuntzes(count_cuntze)%RShear, &
                         & fesim%versagenskriterien%failCuntzes(count_cuntze)%muNorPar,fesim%versagenskriterien%failCuntzes(count_cuntze)%m
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "maxstrain3") then
 
                         count_maxstrain3d = count_maxstrain3d + 1
@@ -1136,9 +1136,9 @@ if (fesim%is_failure /= .false.) then
                         & fesim%versagenskriterien%failMaxStrain3Ds(count_maxstrain3d)%eps13Shear, &
                         & fesim%versagenskriterien%failMaxStrain3Ds(count_maxstrain3d)%eps23Shear, &
                         & fesim%versagenskriterien%failMaxStrain3Ds(count_maxstrain3d)%useGlobal
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "tsaiwu3d") then
-                    
+
                         count_tsaiwu3d = count_tsaiwu3d + 1
                         read(line_long,'(I10,10x,12E23.16)',iostat=read_error)   &
                         & fesim%versagenskriterien%failTsaiWu3Ds(count_tsaiwu3d)%fid, &
@@ -1466,7 +1466,7 @@ if (fesim%is_subcase /= .false.) then
                 end if
                 allocate(fesim%lasten%subcases(1:rowcount))
                 do ii=1,rowcount
-                
+
                         read (35,'(4I10,5L1)',iostat=read_error) fesim%lasten%subcases(ii)%scid, fesim%lasten%subcases(ii)%spcaddid, fesim%lasten%subcases(ii)%loadid, fesim%lasten%subcases(ii)%mpcaddid, &
                                                                    & fesim%lasten%subcases(ii)%skipBuckling, fesim%lasten%subcases(ii)%upgeom, fesim%lasten%subcases(ii)%upstress, &
                                                                    & fesim%lasten%subcases(ii)%output, fesim%lasten%subcases(ii)%readApameInput
@@ -1902,99 +1902,21 @@ if (fesim%is_thermal) then
             goto 9999
         end if
 
-        allocate(fesim%thermal)
-        
-        ! Declare variables for keyword
-        character(80)        :: line_thermal
-        integer              :: i_enabled, i_coupled, i_theronly, i_maxiter
-        double precision     :: ctol, tref
-
+!        allocate(fesim%thermal)
 
         ! Read the keyword line: 6 values, max. 10 characters each
-        read (37,'(A)',iostat=read_error) line_thermal
+        read (37,'(3L10,1I10,2E23.16)',iostat=read_error) &
+            & fesim%thermal%enabled, &
+            & fesim%thermal%coupled_to_structure, &
+            & fesim%thermal%thermal_only, &
+            & fesim%thermal%max_iterations, &
+            & fesim%thermal%tolerance, &
+            & fesim%thermal%tref
         if (read_error /= 0) then
             write(*,*) 'Error reading file ', fname
             write(*,*) 'There was an error processing line 1'
             err_code=1
             goto 9999
-        end if
-
-         ! 1: enabled (default 0)
-        if (len_trim(line_thermal( 1:10)) == 0) then
-            i_enabled = 0
-        else
-            read (line_thermal( 1:10),*,iostat=read_error) i_enabled
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for enabled in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 2: coupled (default 0)
-        if (len_trim(line_thermal(11:20)) == 0) then
-            i_coupled = 0
-        else
-            read (line_thermal(11:20),*,iostat=read_error) i_coupled
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for coupled in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 3: theronly (default 0)
-        if (len_trim(line_thermal(21:30)) == 0) then
-            i_theronly = 0
-        else
-            read (line_thermal(21:30),*,iostat=read_error) i_theronly
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for theronly in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 4: maxiter (default from type)
-        if (len_trim(line_thermal(31:40)) == 0) then
-            i_maxiter = fesim%thermal%max_iterations
-        else
-            read (line_thermal(31:40),*,iostat=read_error) i_maxiter
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for maxiter in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 5: ctol (default from type)
-        if (len_trim(line_thermal(41:50)) == 0) then
-            ctol = fesim%thermal%tolerance
-        else
-            read (line_thermal(41:50),*,iostat=read_error) ctol
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for ctol in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 6: Tref (default from type)
-        if (len_trim(line_thermal(51:60)) == 0) then
-            tref = fesim%thermal%tref
-        else
-            read (line_thermal(51:60),*,iostat=read_error) tref
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for Tref in line 1'
-                err_code=1
-                goto 9999
-            end if
         end if
 
         close (37, iostat=io_error)
@@ -2003,15 +1925,6 @@ if (fesim%is_thermal) then
             err_code=1
             goto 9999
         end if
-
-        ! Assign values
-        fesim%thermal%enabled              = (i_enabled  == 1)
-        fesim%thermal%coupled_to_structure = (i_coupled  == 1)
-        fesim%thermal%thermal_only         = (i_theronly == 1)
-        fesim%thermal%max_iterations       = i_maxiter
-        fesim%thermal%tolerance            = ctol
-        fesim%thermal%tref                 = tref
-
     else
         write (*,*) 'Error opening file ', fname
         err_code=1
@@ -2095,9 +2008,6 @@ if (fesim%is_mat_thermal) then
 end if
 
 if (fesim%is_mat_thermal_td) then
-    character(80)       :: line_td          
-    double precision    :: tvals(8), kvals(8)
-    integer             :: npts, npts_k
     fname = 'matthermaltd.fipps'
     open (unit=40,file=fname,status='old',action='read', iostat=io_error)
     if (io_error == 0) then
@@ -2108,81 +2018,81 @@ if (fesim%is_mat_thermal_td) then
             err_code=1
             goto 9999
         end if
-        if (rowcount < 1) then
+        if (rowcount < 4) then
             write(*,*) 'Error reading file ', fname
-            write(*,*) 'At least one temperature-dependent thermal material must be defined'
+            write(*,*) 'At least one temperature-dependent thermal material must be defined. ',fname,' only contains ',rowcount,' lines!'
             err_code=1
             goto 9999
         end if
-        allocate(fesim%thermal%materials_td(1:rowcount))
 
-        ! read values: 3 lines per material
-        do ii=1,rowcount
-            
+        ! read values: 3 lines per material,
+        nn = (rowcount-1)/3
+        allocate(fesim%thermal%materials_td(1:nn))
+        do ii=1,nn
+
             ! ---- line 1: TMID_TD (I10) ----
             read (40,'(I10)',iostat=read_error) fesim%thermal%materials_td(ii)%mid
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error reading TMID_TD of material', ii
+                write(*,*) 'There was an error reading TMID of TD_material in line', ii
                 err_code=1
                 goto 9999
             end if
 
             ! ---- line 2: temperatures T1..T8 (8 x 10 characters) ----
-            read (40,'(A)',iostat=read_error) line_td
+            read (40,'(A)',iostat=read_error) line_long
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error reading the temperature line of material', ii
+                write(*,*) 'There was an error reading the mat_td keyword', ii
+                write(*,*) 'When getting the temperature line'
                 err_code=1
                 goto 9999
             end if
-            npts = 0
-            do jj=1,8
-                if (len_trim(line_td((jj-1)*10+1:jj*10)) == 0) cycle
-                npts = npts + 1
-                read (line_td((jj-1)*10+1:jj*10),*,iostat=read_error) tvals(npts)
+
+            mm = len_trim(line_long)/23
+            allocate(fesim%thermal%materials_td(ii)%k%T(mm))
+            fesim%thermal%materials_td(ii)%k%n = mm
+            do ll=1,mm
+                read (line_long((ll-1)*23+1 : ll*23), '(E23.16)', iostat=read_error) fesim%thermal%materials_td(ii)%k%T(ll)
                 if (read_error /= 0) then
                     write(*,*) 'Error reading file ', fname
-                    write(*,*) 'Invalid temperature value', jj, 'of material', ii
+                    write(*,*) 'There was an error reading the mat_td keyword', ii
+                    write(*,*) 'When processing value', ll, 'of the conductivity line.'
                     err_code=1
                     goto 9999
                 end if
             end do
 
             ! ---- line 3: conductivities k1..k8 (8 x 10 characters) ----
-            read (40,'(A)',iostat=read_error) line_td
+            read (40,'(A)',iostat=read_error) line_long
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error reading the conductivity line of material', ii
+                write(*,*) 'There was an error reading the mat_td keyword', ii
+                write(*,*) 'When getting the tmid'
                 err_code=1
                 goto 9999
             end if
-            npts_k = 0
-            do jj=1,8
-                if (len_trim(line_td((jj-1)*10+1:jj*10)) == 0) cycle
-                npts_k = npts_k + 1
-                read (line_td((jj-1)*10+1:jj*10),*,iostat=read_error) kvals(npts_k)
+
+            mm = len_trim(line_long)/23
+            if (mm/=fesim%thermal%materials_td(ii)%k%n) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error reading the mat_td keyword', ii
+                write(*,*) mm,' values in conductivity line does not match ', nn, 'values in temperature line'
+                err_code=1
+                goto 9999
+            end if
+
+            allocate(fesim%thermal%materials_td(ii)%k%value(mm))
+            do ll=1,mm
+                read (line_long((ll-1)*23+1 : ll*23), '(E23.16)', iostat=read_error) fesim%thermal%materials_td(ii)%k%value(ll)
                 if (read_error /= 0) then
                     write(*,*) 'Error reading file ', fname
-                    write(*,*) 'Invalid conductivity value', jj, 'of material', ii
+                    write(*,*) 'There was an error reading the mat_td keyword', ii
+                    write(*,*) 'When processing value', ll, 'of the conductivity line.'
                     err_code=1
                     goto 9999
                 end if
             end do
-
-            ! T- and k-lines must contain the same number of values
-            if (npts /= npts_k) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Number of temperatures and conductivities differ for material', ii
-                err_code=1
-                goto 9999
-            end if
-
-            ! fill the curve (thermal_curve_add sorts by temperature)
-            do jj=1,npts
-                call thermal_curve_add(fesim%thermal%materials_td(ii)%k, tvals(jj), kvals(jj))
-            end do
-
         end do
         close (40, iostat=io_error)
         if (io_error /= 0) then
@@ -2192,11 +2102,11 @@ if (fesim%is_mat_thermal_td) then
         end if
 
         ! ---------------- Validation (unchanged) ----------------
-        do ii=1,rowcount
+        do ii=1,nn
 
-            if (fesim%thermal%materials_td(ii)%mid < 2) then
+            if (fesim%thermal%materials_td(ii)%mid < 1) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'TMID_TD must be larger than 1 for material', ii
+                write(*,*) 'TMID_TD must be larger than 0 for material', ii
                 err_code=1
                 goto 9999
             end if
@@ -2229,7 +2139,7 @@ if (fesim%is_mat_thermal_td) then
 
             ! duplicate TMID_TD within temperature-dependent materials
             do jj=ii+1,rowcount
-                if (fesim%thermal%materials_td(ii)%mid == fesim%thermal_materials_td(jj)%mid) then
+                if (fesim%thermal%materials_td(ii)%mid == fesim%thermal%materials_td(jj)%mid) then
                     write(*,*) 'Error reading file ', fname
                     write(*,*) 'Duplicate TMID_TD defined: ', fesim%thermal%materials_td(ii)%mid
                     err_code=1
@@ -2263,8 +2173,6 @@ if (fesim%is_mat_thermal_td) then
 end if
 
 if (fesim%is_tbc) then
-    integer          :: nid_tbc
-    double precision :: tbc_temp
     fname = 'tbc.fipps'
     open (unit=37,file=fname,status='old',action='read', iostat=io_error)
     if (io_error == 0) then
@@ -2284,34 +2192,13 @@ if (fesim%is_tbc) then
         allocate(fesim%thermal%tbcs(1:rowcount))
 
         do ii=1,rowcount
-            read (37,'(A)',iostat=read_error) line_thermal
+            read (37,'(I10,E23.16)',iostat=read_error) fesim%thermal%tbcs%nid, fesim%thermal%tbcs%temperature
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'There was an error processing line', ii
                 err_code=1
                 goto 9999
             end if
-
-            ! 1: NID (max. 10 characters)
-            read (line_thermal( 1:10),*,iostat=read_error) nid_tbc
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for NID in line', ii
-                err_code=1
-                goto 9999
-            end if
-
-            ! 2: T (max. 10 characters, exponent format possible)
-            read (line_thermal(11:20),*,iostat=read_error) tbc_temp
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for T in line', ii
-                err_code=1
-                goto 9999
-            end if
-
-            fesim%thermal%tbcs(ii)%nid         = nid_tbc
-            fesim%thermal%tbcs(ii)%temperature = tbc_temp
         end do
 
         close (37, iostat=io_error)
@@ -2374,7 +2261,11 @@ if (fesim%is_convection_bc) then
         allocate(fesim%thermal%convections(1:rowcount))
 
         do ii = 1, rowcount
-            read (39,'(A)',iostat=read_error) line_conv
+            read (39,'(2I10,"E23.16)',iostat=read_error) &
+                & fesim%thermal%convections%eid, &
+                & fesim%thermal%convections%face, &
+                & fesim%thermal%convections%h, &
+                & fesim%thermal%convections%T_amb
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'There was an error processing line', ii
@@ -2383,73 +2274,6 @@ if (fesim%is_convection_bc) then
                 goto 9999
             end if
 
-            ! 1: EID (Element-ID), columns 1-10
-            if (len_trim(line_conv(1:10)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank EID field in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-            read (line_conv(1:10),*,iostat=read_error) eid
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for EID in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 2: FID (Face-ID), columns 11-20
-            if (len_trim(line_conv(11:20)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank FID field in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-            read (line_conv(11:20),*,iostat=read_error) face
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for FID in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 3: h (film coefficient), columns 21-30
-            if (len_trim(line_conv(21:30)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank h field in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-            read (line_conv(21:30),*,iostat=read_error) h
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for h in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 4: Tamb (ambient temperature), columns 31-40
-            if (len_trim(line_conv(31:40)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank Tamb field in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-            read (line_conv(31:40),*,iostat=read_error) T_amb
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for Tamb in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
 
             ! TODO: Validate that eid exists in the element table here
             ! TODO: Validate that face is a valid face number for the
@@ -2463,12 +2287,6 @@ if (fesim%is_convection_bc) then
                 err_code=1
                 goto 9999
             end if
-
-            ! Assign values
-            fesim%thermal%convections(ii)%eid   = eid
-            fesim%thermal%convections(ii)%face  = face
-            fesim%thermal%convections(ii)%h     = h
-            fesim%thermal%convections(ii)%T_amb = T_amb
         end do
 
         close (39, iostat=io_error)
@@ -2506,62 +2324,14 @@ if (fesim%is_flux_bc) then
 
         allocate(fesim%thermal%fluxes(1:rowcount))
 
-        do ii_flux = 1, rowcount
-            read (40,'(A)',iostat=read_error) line_flux
+        do ii = 1, rowcount
+            read (40,'(2I10,E23.16)',iostat=read_error) &
+                & fesim%thermal%fluxes%eid, &
+                & fesim%thermal%fluxes%face, &
+                & fesim%thermal%fluxes%q
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error processing line', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 1: EID (Element-ID), columns 1-10
-            if (len_trim(line_flux(1:10)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank EID field in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-            read (line_flux(1:10),*,iostat=read_error) eid
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for EID in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 2: FID (Face-ID), columns 11-20
-            if (len_trim(line_flux(11:20)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank FID field in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-            read (line_flux(11:20),*,iostat=read_error) face
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for FID in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 3: q (heat flux), columns 21-30
-            if (len_trim(line_flux(21:30)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank q field in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-            read (line_flux(21:30),*,iostat=read_error) q
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for q in line ', ii_flux
+                write(*,*) 'There was an error processing line', ii
                 close(40)
                 err_code=1
                 goto 9999
@@ -2570,11 +2340,6 @@ if (fesim%is_flux_bc) then
             ! TODO: Validate that eid exists in the element table here
             ! TODO: Validate that face is a valid face number for the
             !       corresponding element type (e.g. 1-6 for lsolid20)
-
-            ! Assign values
-            fesim%thermal%fluxes(ii_flux)%eid  = eid
-            fesim%thermal%fluxes(ii_flux)%face = face
-            fesim%thermal%fluxes(ii_flux)%q    = q
         end do
 
         close (40, iostat=io_error)
@@ -2605,13 +2370,13 @@ end if
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'input_tf'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return
@@ -2619,38 +2384,38 @@ return
 contains
 
   subroutine read_contact_beam2_node(unit, rowcount)
-  
+
     implicit none
-    
+
     integer, intent(in)                         :: unit, rowcount
-    
+
     type nodeListItem
       integer                                   :: nid                                  ! Node-ID
       double precision                          :: xi                                   ! Elementkoordinate
       type(nodeListItem), pointer               :: next => null()
     end type nodeListItem
-    
+
     type(nodeListItem), pointer                 :: actItem,tmpItem
-    
+
     type nodeListItemArray
         type(nodeListItem), pointer             :: p
     end type nodeListItemArray
-    
+
     type(nodeListItemArray), allocatable        :: beam2ConNodeList(:)
-    
-    integer                                     :: nodeID, beam2ID, conNum 
+
+    integer                                     :: nodeID, beam2ID, conNum
     integer                                     :: ii,jj,anz,numContactedElems
     double precision                            :: xi
-    
+
     allocate(beam2ConNodeList(1:size(fesim%elemente%beam2s,1)))
-    
+
     do ii = 1,size(fesim%elemente%beam2s,1)
       beam2ConNodeList(ii)%p => null()
     end do
     actItem => null()
-    
+
     numContactedElems = 0
-    
+
     do ii=1,rowcount
       read (unit,'(2I10,E23.16)',iostat=read_error) beam2ID, nodeID, xi
       if (read_error /= 0) then
@@ -2667,15 +2432,15 @@ contains
       else
         numContactedElems = numContactedElems + 1
       end if
-      
+
       beam2ConNodeList(beam2ID)%p => actItem
 
       actItem => null()
     end do
-    
+
     allocate(fesim%randbedingungen%contact_node_beam2(1:numContactedElems))
     conNum = 0
-    
+
     do ii = 1,size(fesim%elemente%beam2s,1)
       if (associated(beam2ConNodeList(ii)%p) .eq. .FALSE.) cycle
       anz = 1
@@ -2699,7 +2464,7 @@ contains
         deallocate(tmpItem)
       end do
     end do
-    
+
     deallocate(beam2ConNodeList)
 
   !
@@ -2707,53 +2472,53 @@ contains
   !
   ! Error handling
   !
-  
+
   9999 continue
-  
+
   if (err_code /= 0) then
-     
+
      write(*,*)                      'An error occured in subroutine'
      write(*,*)                      'read_contact_beam2_node'
      write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
      write(*,*)                      'exit program '
      stop
-     
+
   end if
-      
+
   end subroutine read_contact_beam2_node
 
   subroutine read_contact_quad8_node(unit, rowcount)
-  
+
     implicit none
-    
+
     integer, intent(in)                         :: unit, rowcount
-    
+
     type nodeListItem
       integer                                   :: nid                                  ! Node-ID
       logical                                   :: kpt                                  ! Kontakttyp
       type(nodeListItem), pointer               :: next => null()
     end type nodeListItem
-    
+
     type(nodeListItem), pointer                 :: actItem,tmpItem
-    
+
     type nodeListItemArray
         type(nodeListItem), pointer             :: p
     end type nodeListItemArray
-    
+
     type(nodeListItemArray), allocatable        :: quad8ConNodeList(:)
-    
-    integer                                     :: nodeID, quad8ID, conNum 
+
+    integer                                     :: nodeID, quad8ID, conNum
     integer                                     :: ii,jj,anz,numContactedElems
-    
+
     allocate(quad8ConNodeList(1:size(fesim%elemente%quad8s,1)))
-    
+
     do ii = 1,size(fesim%elemente%quad8s,1)
       quad8ConNodeList(ii)%p => null()
     end do
     actItem => null()
-    
+
     numContactedElems = 0
-    
+
     do ii=1,rowcount
       read (unit,'(2I10)',iostat=read_error) quad8ID, nodeID
       if (read_error /= 0) then
@@ -2769,15 +2534,15 @@ contains
       else
         numContactedElems = numContactedElems + 1
       end if
-      
+
       quad8ConNodeList(quad8ID)%p => actItem
 
       actItem => null()
     end do
-    
+
     allocate(fesim%randbedingungen%contact_node_quad8(1:numContactedElems))
     conNum = 0
-    
+
     do ii = 1,size(fesim%elemente%quad8s,1)
       if (associated(quad8ConNodeList(ii)%p) .eq. .FALSE.) cycle
       anz = 1
@@ -2799,7 +2564,7 @@ contains
         deallocate(tmpItem)
       end do
     end do
-    
+
     deallocate(quad8ConNodeList)
 
   !
@@ -2807,53 +2572,53 @@ contains
   !
   ! Error handling
   !
-  
+
   9999 continue
-  
+
   if (err_code /= 0) then
-     
+
      write(*,*)                      'An error occured in subroutine'
      write(*,*)                      'read_contact_quad8_node'
      write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
      write(*,*)                      'exit program '
      stop
-     
+
   end if
-      
+
   end subroutine read_contact_quad8_node
 
   subroutine read_contact_lsolid20_node(unit, rowcount)
-  
+
     implicit none
-    
+
     integer, intent(in)                         :: unit, rowcount
-    
+
     type nodeListItem
       integer                                   :: nid                                  ! Node-ID
       logical                                   :: kpt                                  ! Kontakttyp
       type(nodeListItem), pointer               :: next => null()
     end type nodeListItem
-    
+
     type(nodeListItem), pointer                 :: actItem,tmpItem
-    
+
     type nodeListItemArray
         type(nodeListItem), pointer             :: p
     end type nodeListItemArray
-    
+
     type(nodeListItemArray), allocatable        :: lsolid20ConNodeList(:)
-    
-    integer                                     :: nodeID, lsolid20ID, conNum 
+
+    integer                                     :: nodeID, lsolid20ID, conNum
     integer                                     :: ii,jj,anz,numContactedElems
-    
+
     allocate(lsolid20ConNodeList(1:size(fesim%elemente%lsolid20s,1)))
-    
+
     do ii = 1,size(fesim%elemente%lsolid20s,1)
       lsolid20ConNodeList(ii)%p => null()
     end do
     actItem => null()
-    
+
     numContactedElems = 0
-    
+
     do ii=1,rowcount
       read (unit,'(2I10)',iostat=read_error) lsolid20ID, nodeID
       if (read_error /= 0) then
@@ -2869,15 +2634,15 @@ contains
       else
         numContactedElems = numContactedElems + 1
       end if
-      
+
       lsolid20ConNodeList(lsolid20ID)%p => actItem
 
       actItem => null()
     end do
-    
+
     allocate(fesim%randbedingungen%contact_node_lsolid20(1:numContactedElems))
     conNum = 0
-    
+
     do ii = 1,size(fesim%elemente%lsolid20s,1)
       if (associated(lsolid20ConNodeList(ii)%p) .eq. .FALSE.) cycle
       anz = 1
@@ -2899,7 +2664,7 @@ contains
         deallocate(tmpItem)
       end do
     end do
-    
+
     deallocate(lsolid20ConNodeList)
 
   !
@@ -2907,31 +2672,31 @@ contains
   !
   ! Error handling
   !
-  
+
   9999 continue
-  
+
   if (err_code /= 0) then
-     
+
      write(*,*)                      'An error occured in subroutine'
      write(*,*)                      'read_contact_lsolid20_node'
      write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
      write(*,*)                      'exit program '
      stop
-     
+
   end if
-      
+
   end subroutine read_contact_lsolid20_node
 
 end subroutine input_tf
-  
-  
-  
-  
-  
 
-  
 
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+

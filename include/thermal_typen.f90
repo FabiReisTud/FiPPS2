@@ -13,7 +13,7 @@ module thermal_typen
 
   type thermal_material_type ! Temperaturunabhängiges thermisches Material
     integer :: mid = 0
-    double precision :: k
+    double precision :: k = 0.d0
   end type thermal_material_type
 
   type thermal_material_td_type ! Temperaturabhängig thermisches Material
@@ -96,6 +96,10 @@ contains
     curve%n = curve%n + 1
 
     ! Sorting
+    call thermal_curve_sort(curve)
+  end subroutine thermal_curve_add
+
+  subroutine thermal_curve_sort(curve)
     do i = 1, curve%n-1
       do j = i+1, curve%n
         if (curve%T(j) < curve%T(i)) then
@@ -104,7 +108,7 @@ contains
         end if
       end do
     end do
-  end subroutine thermal_curve_add
+  end subroutine
 
   subroutine swap_dp(a,b)
     double precision, intent(inout) :: a,b
@@ -215,32 +219,29 @@ contains
     end do
   end subroutine thermal_get_material
 
-  subroutine thermal_free_state(state)
+ subroutine free_mem_thermal(state)
     type(thermal_state_type), intent(inout) :: state
     integer :: i
 
-    if (allocated(state%temperature)) deallocate(state%temperature)
+    if (allocated(state%temperature))     deallocate(state%temperature)
     if (allocated(state%temperature_old)) deallocate(state%temperature_old)
 
-    if (allocated(state%materials)) then
-      do i=1,size(state%materials)
-        if (allocated(state%materials(i)%k%T)) deallocate(state%materials(i)%k%T)
-        if (allocated(state%materials(i)%k%value)) deallocate(state%materials(i)%k%value)
-        if (allocated(state%materials(i)%E%T)) deallocate(state%materials(i)%E%T)
-        if (allocated(state%materials(i)%E%value)) deallocate(state%materials(i)%E%value)
-        if (allocated(state%materials(i)%nu%T)) deallocate(state%materials(i)%nu%T)
-        if (allocated(state%materials(i)%nu%value)) deallocate(state%materials(i)%nu%value)
-        if (allocated(state%materials(i)%alpha%T)) deallocate(state%materials(i)%alpha%T)
-        if (allocated(state%materials(i)%alpha%value)) deallocate(state%materials(i)%alpha%value)
+    ! Constant thermal materials: no allocatable components -> plain deallocate
+    if (allocated(state%materials)) deallocate(state%materials)
+
+    ! Temperature-dependent materials: curves have allocatable arrays
+    if (allocated(state%materials_td)) then
+      do i = 1, size(state%materials_td)
+        if (allocated(state%materials_td(i)%k%T))     deallocate(state%materials_td(i)%k%T)
+        if (allocated(state%materials_td(i)%k%value)) deallocate(state%materials_td(i)%k%value)
       end do
-      deallocate(state%materials)
+      deallocate(state%materials_td)
     end if
 
-    if (allocated(state%tbcs)) deallocate(state%tbcs)
-    if (allocated(state%convection)) deallocate(state%convection)
-    if (allocated(state%fluxes)) deallocate(state%fluxes)
-    if (allocated(state%heat_sources)) deallocate(state%heat_sources)
-  end subroutine thermal_free_state
+    if (allocated(state%tbcs))        deallocate(state%tbcs)
+    if (allocated(state%convections)) deallocate(state%convections)
+    if (allocated(state%fluxes))      deallocate(state%fluxes)
+end subroutine free_mem_thermal
 
   subroutine thermal_mpi_init()
 #include "petsc/finclude/petscsys.h"

@@ -32,7 +32,7 @@ FIPPS2_LIB  = libfipps.a
 include ${SLEPC_DIR}/lib/slepc/conf/slepc_common
 
 VERSION=2.0.0
-FIPPS_VERSION=2.0.0
+FIPPS_VERSION=fipps_2.0.0
 REVISION=6969
 
 # Fortran compiler
@@ -51,6 +51,6 @@ FC_FLAGS = -Dmod_slepc
 #FC_FLAGS = -Dmod_slepc -g -traceback -check all -warn unused -warn uninitialized -warn interfaces -check noarg_temp_created
 
 CFLAGS =
-FFLAGS = -fpp -fPIC -I../include/ -I../../include ${SLEPC_INCLUDE} ${PETSC_FC_INCLUDES}
+FFLAGS = -fpp -fPIC -I../include/ -I../../include ${SLEPC_DIR} ${PETSC_DIR}
 CPPFLAGS =
 FPPFLAGS =
