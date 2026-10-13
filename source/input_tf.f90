@@ -2192,7 +2192,7 @@ if (fesim%is_tbc) then
         allocate(fesim%thermal%tbcs(1:rowcount))
 
         do ii=1,rowcount
-            read (37,'(I10,E23.16)',iostat=read_error) fesim%thermal%tbcs%nid, fesim%thermal%tbcs%temperature
+            read (37,'(I10,E23.16)',iostat=read_error) fesim%thermal%tbcs(ii)%nid, fesim%thermal%tbcs(ii)%temperature
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'There was an error processing line', ii
@@ -2261,11 +2261,13 @@ if (fesim%is_convection_bc) then
         allocate(fesim%thermal%convections(1:rowcount))
 
         do ii = 1, rowcount
-            read (39,'(2I10,E23.16)',iostat=read_error) &
-                & fesim%thermal%convections%eid, &
-                & fesim%thermal%convections%face, &
-                & fesim%thermal%convections%h, &
-                & fesim%thermal%convections%T_amb
+            read (39,'(4I10,E23.16)',iostat=read_error) &
+                & fesim%thermal%convections(ii)%nid1 &
+                & fesim%thermal%convections(ii)%nid2 &
+                & fesim%thermal%convections(ii)%nid3 &
+                & fesim%thermal%convections(ii)%nid4 &
+                & fesim%thermal%convections(ii)%h, &
+                & fesim%thermal%convections(ii)%T_amb
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'There was an error processing line', ii
@@ -2326,9 +2328,11 @@ if (fesim%is_flux_bc) then
 
         do ii = 1, rowcount
             read (40,'(2I10,E23.16)',iostat=read_error) &
-                & fesim%thermal%fluxes%eid, &
-                & fesim%thermal%fluxes%face, &
-                & fesim%thermal%fluxes%q
+                & fesim%thermal%fluxes(ii)%nid1 &
+                & fesim%thermal%fluxes(ii)%nid2 &
+                & fesim%thermal%fluxes(ii)%nid3 &
+                & fesim%thermal%fluxes(ii)%nid4 &
+                & fesim%thermal%fluxes(ii)%q
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'There was an error processing line', ii

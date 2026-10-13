@@ -27,15 +27,19 @@ module thermal_typen
   end type thermal_tbc_type
 
   type thermal_convection_bc_type
-    integer :: eid = 0              ! ID of element
-    integer :: face = 0             ! ID of element face
+    integer :: nid1 = 0              ! ID of nid1
+    integer :: nid2 = 0              ! ID of nid2
+    integer :: nid3 = 0              ! ID of nid3
+    integer :: nid4 = 0              ! ID of nid4
     double precision :: h = 0.d0    ! Film coefficient, q = Q/A = h * (T - T_amb)
     double precision :: T_amb = 0.d0    ! Ambient temperature at Face
   end type thermal_convection_bc_type
 
   type thermal_flux_bc_type
-    integer :: eid = 0              ! ID of element
-    integer :: face = 0             ! ID of element face
+    integer :: nid1 = 0              ! ID of nid1
+    integer :: nid2 = 0              ! ID of nid2
+    integer :: nid3 = 0              ! ID of nid3
+    integer :: nid4 = 0              ! ID of nid4
     double precision :: q = 0.d0    ! Heat flux across face
   end type thermal_flux_bc_type
 
@@ -96,10 +100,6 @@ contains
     curve%n = curve%n + 1
 
     ! Sorting
-    call thermal_curve_sort(curve)
-  end subroutine thermal_curve_add
-
-  subroutine thermal_curve_sort(curve)
     do i = 1, curve%n-1
       do j = i+1, curve%n
         if (curve%T(j) < curve%T(i)) then
@@ -108,7 +108,7 @@ contains
         end if
       end do
     end do
-  end subroutine
+  end subroutine thermal_curve_add
 
   subroutine swap_dp(a,b)
     double precision, intent(inout) :: a,b
