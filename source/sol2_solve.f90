@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 !
 !> @details
 !
-!> @author 
+!> @author
 !
 !> $Id: sol2_solve.f90 484 2024-10-18 14:28:29Z s1080304 $
 !> $Author: s1080304 $
@@ -52,7 +52,7 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
 !
 ! Data types
 !
-  
+
   Mat            :: KaaS
   Mat            :: KgaaS
   EPS            :: eps
@@ -63,7 +63,7 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
 #ifndef mod_slepc
   PC             :: prec
 #endif
-  
+
   integer        :: numEigVal
   integer        :: err_code=0
 !
@@ -84,19 +84,19 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
   call EPSCreate(PETSC_COMM_WORLD,eps,ierr); CHKERRQ(ierr)
 
   ! ** Set operators. In this case, it is a standard eigenvalue problem
-  call EPSSetOperators(eps,KgaaS,KaaS,ierr); CHKERRQ(ierr)   
+  call EPSSetOperators(eps,KgaaS,KaaS,ierr); CHKERRQ(ierr)
   call EPSSetProblemType(eps,EPS_GHEP,ierr); CHKERRQ(ierr)
 
   !Durch das negative Reziproke wird dieser zum kleinsten positiven Eigenwert
-  call EPSSetWhichEigenpairs(eps,EPS_SMALLEST_REAL,ierr); CHKERRQ(ierr) 
+  call EPSSetWhichEigenpairs(eps,EPS_SMALLEST_REAL,ierr); CHKERRQ(ierr)
   nev = numEigVal
   call EPSSetDimensions(eps,nev,PETSC_DECIDE,PETSC_DECIDE,ierr); CHKERRQ(ierr)
 
   ! ** Set solver parameters at runtime
   call EPSSetFromOptions(eps,ierr); CHKERRQ(ierr)
-  
+
   call EPSGetST(eps,spt,ierr); CHKERRQ(ierr)
-  
+
 #ifdef mod_slepc
 ! Der nächste Abschnitt ist mit der modifzizierten Version von SLEPC zuverwenden
 !_______________________________________________________________________________
@@ -110,10 +110,10 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
   call KSPGetPC(ksp,prec,ierr); CHKERRQ(ierr)
   call PCSetType(prec,PCCHOLESKY,ierr); CHKERRQ(ierr)
   call PCFactorSetMatSolverType(prec,MATSOLVERMUMPS,ierr); CHKERRQ(ierr)
-    
+
   call KSPSetErrorIfNotConverged(ksp,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
   call PCSetErrorIfFailure(prec,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
-  
+
   call EPSSetUp(eps,ierr); CHKERRQ(ierr)
 #endif
 
@@ -126,17 +126,17 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
 ! =================================================================================================
 !
 ! Error handling
-!  
+!
 9999 continue
 
   if (err_code /= 0) then
-   
+
     write(*,*)                      'An error occured in subroutine'
     write(*,*)                      'sol2_solve'
     write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
     write(*,*)                      'exit program '
     stop
-   
+
   end if
 
 end subroutine sol2_solve

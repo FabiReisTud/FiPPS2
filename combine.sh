@@ -28,6 +28,8 @@ for dir in include source; do
     while IFS= read -r -d '' f; do
         # Skip the output file itself (in case it lives in one of these dirs)
         [ "$(realpath "$f")" = "$(realpath "$OUT")" ] && continue
+        # If not .f90, skip
+        [[ $f == *.f90 ]] || continue
 
         echo "===== $f =====" >> "$OUT"
         cat "$f" >> "$OUT"

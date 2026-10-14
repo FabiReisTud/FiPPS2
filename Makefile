@@ -48,7 +48,7 @@ all:
 # 	ar rcs libfipps.a include/*.o source/*.o
 
 # Remove all files
-clean::
+cleanall::
 	( cd ApameSolver/src ; $(MAKE) clean)
 	( cd PANEL2D ; $(MAKE) clean)
 	( cd XfoilWrapper ; $(MAKE) clean)

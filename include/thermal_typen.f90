@@ -67,6 +67,7 @@ module thermal_typen
   !
   logical :: thermal_mpi_type_inited = .false.
   integer :: mpi_thermal_material_type
+  integer :: mpi_thermal_material_td_type
   integer :: mpi_thermal_tbc_type
   integer :: mpi_thermal_convection_bc_type
   integer :: mpi_thermal_flux_bc_type
@@ -249,13 +250,17 @@ end subroutine free_mem_thermal
 
       use petscsys
 
-      implicit none
+      INTEGER                             :: count
+      INTEGER, dimension(:), allocatable  :: array_of_blockl
+      INTEGER, dimension(:), allocatable  :: array_of_types
+      INTEGER(kind=MPI_ADDRESS_KIND), dimension(:), allocatable   :: array_of_disp
+      INTEGER(kind=MPI_ADDRESS_KIND), dimension(:), allocatable   :: address
 
-      INTEGER                             :: count, ii, ierror
-      INTEGER, dimension(:), allocatable  :: array_of_blockl, array_of_types
-      INTEGER(kind=MPI_ADDRESS_KIND), dimension(:), allocatable :: array_of_disp, address
+      INTEGER                             :: ii
+      INTEGER                             :: ierror
 
       TYPE(thermal_material_type)      :: mat
+      TYPE(thermal_material_td_type)   :: mattd
       TYPE(thermal_tbc_type)           :: tbc
       TYPE(thermal_convection_bc_type) :: conv
       TYPE(thermal_flux_bc_type)       :: flux
@@ -267,9 +272,12 @@ end subroutine free_mem_thermal
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
 
-      array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
+      array_of_types (1) = MPI_INTEGER
+      array_of_blockl(1) = 1
       CALL MPI_GET_ADDRESS(mat%mid, address(1), ierror)
-      array_of_types (2) = MPI_DOUBLE_PRECISION; array_of_blockl(2) = 1
+
+      array_of_types (2) = MPI_DOUBLE_PRECISION
+      array_of_blockl(2) = 1
       CALL MPI_GET_ADDRESS(mat%k, address(2), ierror)
 
       array_of_disp(1) = 0
@@ -289,9 +297,12 @@ end subroutine free_mem_thermal
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
 
-      array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
+      array_of_types (1) = MPI_INTEGER
+      array_of_blockl(1) = 1
       CALL MPI_GET_ADDRESS(tbc%nid, address(1), ierror)
-      array_of_types (2) = MPI_DOUBLE_PRECISION; array_of_blockl(2) = 1
+
+      array_of_types (2) = MPI_DOUBLE_PRECISION
+      array_of_blockl(2) = 1
       CALL MPI_GET_ADDRESS(tbc%temperature, address(2), ierror)
 
       array_of_disp(1) = 0
@@ -305,20 +316,35 @@ end subroutine free_mem_thermal
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
 
       !***************************************************************************
-      ! thermal_convection_bc_type: eid, face, h, T_amb
+      ! thermal_convection_bc_type: nid1, nid2, nid3, nid4, h, T_amb
       !***************************************************************************
-      count = 4
+      count = 6
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
 
-      array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
-      CALL MPI_GET_ADDRESS(conv%eid, address(1), ierror)
-      array_of_types (2) = MPI_INTEGER;          array_of_blockl(2) = 1
-      CALL MPI_GET_ADDRESS(conv%face, address(2), ierror)
-      array_of_types (3) = MPI_DOUBLE_PRECISION; array_of_blockl(3) = 1
-      CALL MPI_GET_ADDRESS(conv%h, address(3), ierror)
-      array_of_types (4) = MPI_DOUBLE_PRECISION; array_of_blockl(4) = 1
-      CALL MPI_GET_ADDRESS(conv%T_amb, address(4), ierror)
+      array_of_types (1) = MPI_INTEGER
+      array_of_blockl(1) = 1
+      CALL MPI_GET_ADDRESS(conv%nid1, address(1), ierror)
+
+      array_of_types (2) = MPI_INTEGER
+      array_of_blockl(2) = 1
+      CALL MPI_GET_ADDRESS(conv%nid2, address(2), ierror)
+
+      array_of_types (3) = MPI_INTEGER
+      array_of_blockl(3) = 1
+      CALL MPI_GET_ADDRESS(conv%nid3, address(3), ierror)
+
+      array_of_types (4) = MPI_INTEGER
+      array_of_blockl(4) = 1
+      CALL MPI_GET_ADDRESS(conv%nid4, address(4), ierror)
+
+      array_of_types (5) = MPI_DOUBLE_PRECISION
+      array_of_blockl(5) = 1
+      CALL MPI_GET_ADDRESS(conv%h, address(5), ierror)
+
+      array_of_types (6) = MPI_DOUBLE_PRECISION
+      array_of_blockl(6) = 1
+      CALL MPI_GET_ADDRESS(conv%T_amb, address(6), ierror)
 
       array_of_disp(1) = 0
       DO ii = 2, count
@@ -331,18 +357,31 @@ end subroutine free_mem_thermal
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
 
       !***************************************************************************
-      ! thermal_flux_bc_type: eid, face, q
+      ! thermal_flux_bc_type: nid1, nid2, nid3, nid4, q
       !***************************************************************************
-      count = 3
+      count = 5
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
 
-      array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
-      CALL MPI_GET_ADDRESS(flux%eid, address(1), ierror)
-      array_of_types (2) = MPI_INTEGER;          array_of_blockl(2) = 1
-      CALL MPI_GET_ADDRESS(flux%face, address(2), ierror)
-      array_of_types (3) = MPI_DOUBLE_PRECISION; array_of_blockl(3) = 1
-      CALL MPI_GET_ADDRESS(flux%q, address(3), ierror)
+      array_of_types (1) = MPI_INTEGER
+      array_of_blockl(1) = 1
+      CALL MPI_GET_ADDRESS(flux%nid1, address(1), ierror)
+
+      array_of_types (2) = MPI_INTEGER
+      array_of_blockl(2) = 1
+      CALL MPI_GET_ADDRESS(flux%nid2, address(2), ierror)
+
+      array_of_types (3) = MPI_INTEGER
+      array_of_blockl(3) = 1
+      CALL MPI_GET_ADDRESS(flux%nid3, address(3), ierror)
+
+      array_of_types (4) = MPI_INTEGER
+      array_of_blockl(4) = 1
+      CALL MPI_GET_ADDRESS(flux%nid4, address(4), ierror)
+
+      array_of_types (5) = MPI_DOUBLE_PRECISION
+      array_of_blockl(5) = 1
+      CALL MPI_GET_ADDRESS(flux%q, address(5), ierror)
 
       array_of_disp(1) = 0
       DO ii = 2, count
