@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -101,14 +101,14 @@ double precision                                  :: zeta_elem, lth_sum
 !
 ! Calculation
 !
- do lay = 1,nlay  
+ do lay = 1,nlay
 
    ! Total number of integration points in current layer
    N = nip*nip*nop(lay)
 
    ! allocate layer specific arrays for integration point values
    allocate(xi_ip(N),eta_ip(N),zeta_ip(N),w_xi(N),w_eta(N),w_zeta(N))
-  
+
    ! get integration points and corresponding weights
    call integration_points_3d(     nip, "Gauss",   xi_ip, w_xi, &
                                    nip, "Gauss",  eta_ip, w_eta, &
@@ -116,7 +116,7 @@ double precision                                  :: zeta_elem, lth_sum
 
    ! calculate summed thickness until current layer
    lth_sum = lth_sum + lth(lay)
-   
+
    ! Loop over integration points
    do ii = 1,N
 
@@ -127,10 +127,10 @@ double precision                                  :: zeta_elem, lth_sum
      ! (see eq.(22) in Panda, S.; Natarajan, R.: Analysis of laminated composite shell
      !  structures by finite element method. Computers & Structures 14(3-4). 1981. pp. 225-230)
      zeta_elem = -1.d0 + (2.d0*lth_sum - lth(lay)*(1.d0-zeta_ip(ii)))/tth
-  
+
      ! Get derivates of shape functions with respect to global coordinates
      call hexa20_shapefunctions_x_y_z(xi_ip(ii),eta_ip(ii),zeta_elem,node_coords,dNidx,dNidy,dNidz,detJac,J)
-     
+
 !      if (ii .eq. 1) then
 !        first_detJac = detJac
 !      end if
@@ -139,7 +139,7 @@ double precision                                  :: zeta_elem, lth_sum
 !      if (detJac*first_detJac .lt. 0.d0) then
 !        sign_switched = .true.
 !      end if
-            
+
      if (detJac < 0.d0) then
        write(*,*) 'for lsolid20 number:                  ', lsolid20Num
        write(*,*) 'element number:                       ', elemNum
@@ -153,21 +153,22 @@ double precision                                  :: zeta_elem, lth_sum
 !        write(*,*) 'element number:                       ', elemNum
 !        write(*,*) 'sign switch in determinant of the jacobian'
 !      end if
-     
+
      ! Transform material stiffness matrix from element
      ! to global coordinate system
      call transform_eg_cmat(fesim, Clay(:,:,lay), J, cid, TC)
-     
-     do kk = 1,20
-       do jj = 1,kk
+     ! This loop adds the stiffness contributions of all nodes
+     do kk = 1,20   ! node associated with row block
+       do jj = 1,kk ! node associated with column block, only lower third of stiffness computed and later mirrored
+         ! Ableitung der Interpolationsfunkten des jj-ten Knoten
          Bxj = dNidx(jj)
          Byj = dNidy(jj)
          Bzj = dNidz(jj)
-         
+         ! Ableitung der Interpolationsfunkten des kk-ten Knoten
          Bxk = dNidx(kk)
          Byk = dNidy(kk)
          Bzk = dNidz(kk)
-       
+         ! Anteile des Knotens
          Kpart( 1, 1) = Bxj*(Bxk*TC(1, 1) + Byk*TC(6, 1) + Bzk*TC(5, 1)) + Byj*(Bxk*TC(1, 6) + Byk*TC(6, 6) + Bzk*TC(5, 6)) + Bzj*(Bxk*TC(1, 5) + Byk*TC(6, 5) + Bzk*TC(5, 5))
          Kpart( 2, 1) = Bxj*(Bxk*TC(6, 1) + Byk*TC(2, 1) + Bzk*TC(4, 1)) + Byj*(Bxk*TC(6, 6) + Byk*TC(2, 6) + Bzk*TC(4, 6)) + Bzj*(Bxk*TC(6, 5) + Byk*TC(2, 5) + Bzk*TC(4, 5))
          Kpart( 3, 1) = Bxj*(Bxk*TC(5, 1) + Byk*TC(4, 1) + Bzk*TC(3, 1)) + Byj*(Bxk*TC(5, 6) + Byk*TC(4, 6) + Bzk*TC(3, 6)) + Bzj*(Bxk*TC(5, 5) + Byk*TC(4, 5) + Bzk*TC(3, 5))
@@ -177,30 +178,30 @@ double precision                                  :: zeta_elem, lth_sum
          Kpart( 1, 3) = Bxj*(Bxk*TC(1, 5) + Byk*TC(6, 5) + Bzk*TC(5, 5)) + Byj*(Bxk*TC(1, 4) + Byk*TC(6, 4) + Bzk*TC(5, 4)) + Bzj*(Bxk*TC(1, 3) + Byk*TC(6, 3) + Bzk*TC(5, 3))
          Kpart( 2, 3) = Bxj*(Bxk*TC(6, 5) + Byk*TC(2, 5) + Bzk*TC(4, 5)) + Byj*(Bxk*TC(6, 4) + Byk*TC(2, 4) + Bzk*TC(4, 4)) + Bzj*(Bxk*TC(6, 3) + Byk*TC(2, 3) + Bzk*TC(4, 3))
          Kpart( 3, 3) = Bxj*(Bxk*TC(5, 5) + Byk*TC(4, 5) + Bzk*TC(3, 5)) + Byj*(Bxk*TC(5, 4) + Byk*TC(4, 4) + Bzk*TC(3, 4)) + Bzj*(Bxk*TC(5, 3) + Byk*TC(4, 3) + Bzk*TC(3, 3))
+         ! Factor in Abhängigkeit von dem Knotengewicht und dem Anteil der Laminatdicke zur Gesamtdicke
+         fac = weight*detJac*lth(lay)/tth
 
-         fac = weight*detJac*lth(lay)/tth         
-         
-         ks = (kk-1)*3
-         js = (jj-1)*3
-         
+         ks = (kk-1)*3  ! Beginning row of 3x3 block
+         js = (jj-1)*3  ! Beginning column of 3x3 block
+
          do nn = 1,3
            do mm = 1,3
-             lsolid20_K(ks+mm,js+nn) = lsolid20_K(ks+mm,js+nn) + Kpart(mm,nn)*fac
-             
+             lsolid20_K(ks+mm,js+nn) = lsolid20_K(ks+mm,js+nn) + Kpart(mm,nn)*fac   ! Hinzufügen zur Gesamtsteifigkeit des Elements unterhalb der Diagonalen
+
              if (jj .NE. kk) then
-               lsolid20_K(js+mm,ks+nn) = lsolid20_K(js+mm,ks+nn) + Kpart(nn,mm)*fac
+               lsolid20_K(js+mm,ks+nn) = lsolid20_K(js+mm,ks+nn) + Kpart(nn,mm)*fac ! Hinzufügen zur Gesamtsteifigkeit des Elements oberhalb der Diagonalen
              end if
            end do
          end do
-         
+
        end do
      end do
 
    end do
-   
+
    ! deallocate layer specific arrays for integration point values
    deallocate(xi_ip,eta_ip,zeta_ip,w_xi,w_eta,w_zeta)
-   
+
  end do
 
 !     ! If sign of all Jacobians is negative, multiply with -1.d0
@@ -213,13 +214,13 @@ double precision                                  :: zeta_elem, lth_sum
 9999 continue
 !
 if (err_code /= 0) then
-!   
+!
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'lsolid20_stiff'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-!   
+!
 end if
 !
 return
