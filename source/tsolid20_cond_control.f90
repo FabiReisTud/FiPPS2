@@ -38,6 +38,7 @@ subroutine tsolid20_cond_control(fesim,CaaS)
 !
 use konstanten
 use fesimulation_typen
+use thermal_typen
 use globale_variablen
 !
 ! =================================================================================================
@@ -51,6 +52,22 @@ use petscmat
 !
 implicit none
 !
+! =================================================================================================
+!
+! Interfaces
+interface
+  subroutine tsolid20_cond(fesim, node_coords, node_ids, lsolid20Num, elemNum, k, tsolid20_C)
+    use fesimulation_typen
+    use thermal_typen
+    implicit none
+    type(fe_simulation), intent(in)      :: fesim
+    double precision, intent(in)         :: node_coords(20,3)
+    integer, intent(in)                  :: node_ids(20)
+    integer, intent(in)                  :: lsolid20Num, elemNum
+    type(thermal_curve_type), intent(in) :: k
+    double precision, intent(out)        :: tsolid20_C(20,20)
+  end subroutine tsolid20_cond
+end interface
 ! =================================================================================================
 !
 ! Data types
@@ -73,9 +90,10 @@ integer, dimension(20)              :: node_ids
 double precision, dimension(20,3)   :: node_coords
 double precision, dimension(20,20)  :: tsolid20_C
 
-
-integer                             :: jj, kk,lsolid20Num,elemNum
+integer                             :: ii,jj, kk, ll,lsolid20Num,elemNum
 integer                             :: err_code=0
+integer                             :: pid, tmidid
+type(thermal_curve_type)            :: k
 
 PetscMPIInt                         :: rank
 PetscErrorCode                      :: ierr
@@ -94,7 +112,35 @@ PetscErrorCode                      :: ierr
  do jj = 1,size(fesim%elemente%lsolid20s,1)
     if (mpi_lsolid20_proc_dist(jj) .NE. rank) cycle
 
-    call tsolid20_cond(fesim,node_coords,lsolid20Num,elemNum,tsolid20_C)
+    pid = fesim%elemente%lsolid20s(jj)%pid ! PropertyID des Elements
+    tmidid = 0 ! ID des Thermischen Materials initialisieren
+    ! Wärmeleitkoeffizientenkurve holen
+    do kk=1,size(fesim%thermal%propthermals)
+        if (fesim%thermal%propthermals(kk)%propid == pid) then
+            tmidid = fesim%thermal%propthermals(kk)%tmidid ! MatThermalTd gefunden! --> TMIDID speichern!
+            do ll=1,size(fesim%thermal%materials_td)
+                if (fesim%thermal%materials_td(ll)%mid == tmidid) then
+                    k = fesim%thermal%materials_td(ll)%k ! k gefunden! --> Speichern!
+                    exit
+                end if
+            end do
+            if (tmidid .NE. 0) then
+                exit
+            end if
+        end if
+    end do
+
+    if (tmidid .EQ. 0) then
+       write(*,*) 'for lsolid20 number:                  ', lsolid20Num
+       write(*,*) 'element number:                       ', elemNum
+       write(*,*) 'the thermal material could not be found'
+       err_code = 2
+       goto 9999
+    end if
+
+    ! tsolid20_C holen
+    call tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
+    ! Elementmatrix der CaaS hinzufügen
  end do
 !
 ! =================================================================================================

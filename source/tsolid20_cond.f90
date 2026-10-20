@@ -32,12 +32,13 @@
 !> @author Fabian Reisener, TU Dresden, WM 2026
 !
 ! =================================================================================================
-subroutine tsolid20_cond(fesim,node_coords,lsolid20Num,elemNum,tsolid20_C)
+subroutine tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
 ! =================================================================================================
 ! use
 !
  use integration_schemes
  use fesimulation_typen
+ use thermal_typen
 !
 ! =================================================================================================
 !
@@ -45,29 +46,38 @@ implicit none
 !
 ! =================================================================================================
 !
+! Interfaces
+! =================================================================================================
+!
 ! Data types
 !
 ! Input
 type(fe_simulation), intent(in)                   :: fesim
-double precision, intent(in)                      :: node_coords(20,3) !< (20,3)-Array containing global coordinates of element nodes
-integer, intent(in)                               :: lsolid20Num           !< number of the lsolid20 element (only used for error messages)
+double precision, intent(in)                      :: node_coords(20,3)  !< (20,3)-Array containing global coordinates of element nodes
+integer, intent(in)                               :: node_ids(20)       !< 20-Array containing all node-ids for eval of IP-temperature
+integer, intent(in)                               :: lsolid20Num        !< number of the lsolid20 element (only used for error messages)
 integer, intent(in)                               :: elemNum            !< element number of the lsolid20 element (only used for error messages)
+type(thermal_curve_type), intent(in)              :: k                  !< thermal curve of element
 !
 ! Output
 double precision, intent(out), dimension(20,20)   :: tsolid20_C !< 20x20-Element conduction matrix
 !
 ! Internal
-integer                                           :: err_code=0, ii, kk, jj, N
+integer                                           :: err_code=0, ii, jj, kk, N
 double precision, allocatable, dimension(:)       :: xi_ip, eta_ip, zeta_ip
 double precision, allocatable, dimension(:)       :: w_xi, w_eta, w_zeta
 double precision, dimension(20)                   :: dNidx, dNidy, dNidz, J
+double precision, dimension(20)                   :: Ni,dNidxi, dNideta, dNidzeta
 double precision                                  :: weight, detJac
+
+
+double precision                                  :: c, T_ip
 !
 ! =================================================================================================
 !
 ! Initialisation
 !
- tsolid20_C = 0.d0
+tsolid20_C = 0.d0
 !
 ! =================================================================================================
 !
@@ -86,10 +96,8 @@ call integration_points_3d( 2, "Gauss",   xi_ip, w_xi, &
 
 ! Loop over integration points
 do ii=1,N
+    ! Get the weight of the integration point
     weight = w_xi(ii)*w_eta(ii)*w_zeta(ii)
-
-    ! Get derivates of shape functions with respect to global coordinates
-    call hexa20_shapefunctions_x_y_z(xi_ip(ii),eta_ip(ii),zeta_ip(ii),node_coords,dNidx,dNidy,dNidz,detJac,J)
 
     ! check if Element is malformed
     if (detJac < 0.d0) then
@@ -100,11 +108,30 @@ do ii=1,N
        goto 9999
      end if
 
-    ! This loop adds the conduction contributions of all nodes
+    ! Temperatur an IP über Quadratur holen, falls ein Temperaturfeld bereits berechnet wurde
+    if (allocated(fesim%thermal%temperature)) then
+        T_ip = 0.d0
+        call hexa20_shapefunctions_xi_eta_zeta(xi_ip(ii), eta_ip(ii), zeta_ip(ii), Ni, dNidxi, dNideta, dNidzeta)
+        do jj=1,20
+            if (node_ids(jj) >= 1 .and. node_ids(jj) <= size(fesim%thermal%temperature)) then
+                T_ip = T_ip + Ni(jj) * fesim%thermal%temperature(node_ids(jj)) ! Knotenanteil der IP-Temperatur hinzufügen
+            end if
+        end do
+    else
+        T_ip = fesim%thermal%tref ! IP-Temperatur wird ansonsten auf Referenztemperatur der Simulation gesetzt
+    end if
+    ! Wärmeleitungskoeffizient über Temperatur am IP holen
+    c = thermal_curve_eval(k,T_ip)
+
+
+    ! This adds the conduction contributions of all nodes
+    ! Get derivates of shape functions with respect to global coordinates
+    call hexa20_shapefunctions_x_y_z(xi_ip(ii),eta_ip(ii),zeta_ip(ii),node_coords,dNidx,dNidy,dNidz,detJac,J)
+    ! Loop over all nodes
     do kk = 1,20   ! node associated with row block
-        do jj = 1,kk ! node associated with column block, only lower third of stiffness computed and later mirrored
-            ! Hinzufügen des Knotenanteils
-            tsolid20_C(jj,kk) = tsolid20_C(jj,kk) + 0.1 * weight * dNidx(jj)*dNidx(kk) + dNidy(jj)*dNidy(kk) + dNidz(jj)*dNidz(kk)
+        do jj = 1,kk ! node associated with column block, only until kk, as upper third of stiffness is later simply mirrored
+            ! Hinzufügen des Knotenanteils zur Leitungsmatrix
+            tsolid20_C(jj,kk) = tsolid20_C(jj,kk) + c * weight * dNidx(jj)*dNidx(kk) + dNidy(jj)*dNidy(kk) + dNidz(jj)*dNidz(kk)
         end do
     end do
 end do
