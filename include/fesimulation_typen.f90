@@ -109,7 +109,6 @@ type fe_simulation
   logical                       :: is_multistep
   ! Thermal: Start
   logical                       :: is_thermal
-  logical                       :: is_mat_thermal
   logical                       :: is_mat_thermal_td
   logical                       :: is_tbc
   logical                       :: is_flux_bc
@@ -243,7 +242,6 @@ contains
     fesim%is_multistep             = .FALSE.
     ! Thermal: START
     fesim%is_thermal               = .FALSE.
-    fesim%is_mat_thermal           = .FALSE.
     fesim%is_mat_thermal_td        = .FALSE.
     fesim%is_tbc                   = .FALSE.
     fesim%is_convection_bc         = .FALSE.
@@ -373,7 +371,6 @@ contains
 
     ! Thermal: START
     call MPI_Bcast (           fesim%is_thermal, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
-    call MPI_Bcast (       fesim%is_mat_thermal, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (    fesim%is_mat_thermal_td, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (               fesim%is_tbc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (     fesim%is_convection_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
@@ -394,7 +391,7 @@ contains
     call bcast_ergebnisse(fesim%ergebnisse)
     !residuals
     !thermal
-    call bcast_thermal(fesim%thermal,fesim%is_thermal,fesim%is_mat_thermal,fesim%is_mat_thermal_td,fesim%is_tbc,fesim%is_convection_bc,fesim%is_flux_bc)
+    call bcast_thermal(fesim%thermal,fesim%is_thermal,fesim%is_mat_thermal_td,fesim%is_tbc,fesim%is_convection_bc,fesim%is_flux_bc)
 
 #endif
 

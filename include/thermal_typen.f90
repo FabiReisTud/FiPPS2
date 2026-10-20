@@ -404,7 +404,7 @@ end subroutine free_mem_thermal
 
 
 
-    subroutine bcast_thermal(state,is_thermal,is_mat_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc)
+    subroutine bcast_thermal(state,is_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc)
 
 #include "petsc/finclude/petscsys.h"
     use petscsys
@@ -412,7 +412,7 @@ end subroutine free_mem_thermal
     implicit none
 
     type(thermal_state_type), intent(inout) :: state
-    logical :: is_thermal,is_mat_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc
+    logical :: is_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc
 
     PetscMPIInt :: rank
     PetscErrorCode :: ierr
@@ -465,19 +465,6 @@ end subroutine free_mem_thermal
         call MPI_Bcast(state%temperature    , n, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
         call MPI_Bcast(state%temperature_old, n, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
       end if
-    end if
-
-    ! ------------------------------------------------------------------
-    ! Constant thermal materials (custom MPI type)
-    ! ------------------------------------------------------------------
-    if (is_mat_thermal) then
-      if (rank .eq. 0) num = size(state%materials,1)
-      call MPI_Bcast(num, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
-      if (rank .ne. 0) then
-        if (allocated(state%materials)) deallocate(state%materials)
-        allocate(state%materials(num))
-      end if
-      call MPI_Bcast(state%materials, num, MPI_THERMAL_MATERIAL_TYPE, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     end if
 
     ! ------------------------------------------------------------------

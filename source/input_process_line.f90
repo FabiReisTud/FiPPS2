@@ -209,8 +209,6 @@ do while (jj <= len(line))
         !!!!!!!!!!! Thermal: Start
         else if (word == 'thermal') then
             fesim%is_thermal = .true.
-        else if (word == 'matthermal') then
-            fesim%is_mat_thermal = .true.
         else if (word == 'matthermaltd') then
             fesim%is_mat_thermal_td = .true.
         else if (word == 'tbc') then
