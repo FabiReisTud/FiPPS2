@@ -43,6 +43,11 @@ module thermal_typen
     double precision :: q = 0.d0    ! Heat flux across face
   end type thermal_flux_bc_type
 
+  type thermal_property_type
+    integer :: propid = 0   ! PropertyID
+    integer :: tmidid = 0   ! ThermalMaterialID
+  end type
+
   type thermal_state_type
     logical :: enabled = .false. ! Is thermal calculation supposed to be performed?
     logical :: coupled_to_structure = .false.   ! Translate calculated temperatures to stress analysis
@@ -60,6 +65,7 @@ module thermal_typen
     type(thermal_tbc_type), allocatable :: tbcs(:)
     type(thermal_convection_bc_type), allocatable :: convections(:)
     type(thermal_flux_bc_type), allocatable :: fluxes(:)
+    type(thermal_property_type), allocatable :: propthermals(:)
   end type thermal_state_type
 
   !

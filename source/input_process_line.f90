@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -92,35 +92,35 @@ err_code = 0
 
 do while (jj <= len(line))
 !do jj=1,len(line)
-   
+
    ! avoid prefaced blanks in the beginning of a line
-   
+
    if ((begin_index == 0) .and. (line(jj:jj) /= ' ')) then
       begin_index = jj
    end if
-   
+
    ! start with first actual character thats not a blank
-   
+
    if (begin_index > 0) then
-      
+
      ! avoid blanks between words in one line and postpositioned blanks
-     
+
      if (line(jj:jj) == ' ') then
        end_index = jj - 1
      end if
-      
+
      if (jj == len(line)) then
        end_index = jj
      end if
-      
+
      ! word processing
-      
+
      if (end_index > 0) then
-      
+
        kk = kk + 1
        word = line(begin_index:end_index)
        array(kk) = word
-    
+
        do ll = 1,len(word)
          if (word(ll:ll) == '=') then
            flag = .true.
@@ -128,11 +128,11 @@ do while (jj <= len(line))
            exit
          end if
       end do
-    
+
       if (flag == .false.) then
-    
+
       ! check for Keywords
-    
+
         if (word == 'node') then
             fesim%is_node  = .true.
         else if (word == 'quad8') then
@@ -219,8 +219,10 @@ do while (jj <= len(line))
             fesim%is_flux_bc = .true.
         else if (word == 'convectionbc') then
             fesim%is_convection_bc = .true.
+        else if (word == 'propthermal') then
+            fesim%is_prop_thermal = .true.
         !!!!!!!!!!! Thermal: End
-            
+
         else if (word == 'outputvtk') then
             fesim%ausgabe%outputVTK = .true.
         else if (word == 'outputuser') then
@@ -254,9 +256,9 @@ do while (jj <= len(line))
         else if (word == 'globalReactForce') then
             fesim%globalReactForce = .true.
         end if
-            
+
       else if (flag == .true.) then
-            
+
         if (varname == 'sol') then
             fesim%sol = CharToInt(word)
         else if (varname == 'numEigVal') then
@@ -280,24 +282,24 @@ do while (jj <= len(line))
         else if (varname == 'aeroDisplEps') then
             fesim%aeroDisplEps = CharToDou(word)
         end if
-            
+
       else
         write(*,*) 'Error processing flag'
         err_code=1
         goto 9999
       end if
-         
+
       ! re-initialize indices
       begin_index = 0
       end_index   = 0
-         
+
     end if
   end if
-   
+
   ! update index
-   
+
   jj = jj+1
-   
+
 end do
 
 !
@@ -309,13 +311,13 @@ end do
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'input_process_line'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return
@@ -323,34 +325,34 @@ return
 contains
 
  function CharToInt(word)
- 
+
    implicit none
-   
+
    character(50)               :: word          ! current word
    integer                     :: CharToInt
-   
+
    do ll=1,len(word)
      if (word(ll:ll) == '=') then
        READ(word((ll+1):len(word)),'(I)') CharToInt
      end if
    end do
- 
+
  end function CharToInt
 
  function CharToDou(word)
- 
+
    implicit none
-   
+
    character(50)               :: word          ! current word
    double precision            :: CharToDou
-   
+
    do ll=1,len(word)
      if (word(ll:ll) == '=') then
        READ(word((ll+1):len(word)),'(F)') CharToDou
      end if
    end do
- 
+
  end function CharToDou
- 
- 
+
+
 end subroutine input_process_line

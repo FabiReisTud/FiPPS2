@@ -21,9 +21,14 @@
 # makeconfig.mk:  common configuration file for FiPPS
 #===============================================================================
 
+VERSION=2.1.0
+REVISION=1
+
+#===============================================================================
+
 # fast - without debugging options
-PETSC_DIR   = /mnt/appl/x86_64/petsc/3.16.1
-SLEPC_DIR   = /mnt/appl/x86_64/slepc/3.16.0_mod
+# PETSC_DIR   = /mnt/appl/x86_64/petsc/3.22.5
+# SLEPC_DIR   = /mnt/appl/x86_64/slepc/3.22.2_mod
 APAME_LIB   = ../ApameSolver/src/apame.a
 PANEL2D_LIB = ../PANEL2D/panel2d.a
 XFOILWRAPPER_LIB = ../XfoilWrapper/xfoilwrapper.a
@@ -31,9 +36,8 @@ FIPPS2_LIB  = libfipps.a
 
 include ${SLEPC_DIR}/lib/slepc/conf/slepc_common
 
-VERSION=2.0.0
-FIPPS_VERSION=fipps_2.0.0
-REVISION=6969
+FIPPS := FiPPS
+FIPPS_VERSION := include/version.include
 
 # Fortran compiler
 # LFT
@@ -51,6 +55,6 @@ FC_FLAGS = -Dmod_slepc
 #FC_FLAGS = -Dmod_slepc -g -traceback -check all -warn unused -warn uninitialized -warn interfaces -check noarg_temp_created
 
 CFLAGS =
-FFLAGS = -fpp -fPIC -I../include/ -I../../include ${SLEPC_DIR} ${PETSC_DIR}
+FFLAGS = -fpp -fPIC -I../include/ -I../../include ${SLEPC_INCLUDE} ${PETSC_FC_INCLUDES}
 CPPFLAGS =
 FPPFLAGS =

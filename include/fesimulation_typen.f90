@@ -114,6 +114,7 @@ type fe_simulation
   logical                       :: is_tbc
   logical                       :: is_flux_bc
   logical                       :: is_convection_bc
+  logical                       :: is_prop_thermal
   ! Thermal: End
 
 
@@ -247,6 +248,7 @@ contains
     fesim%is_tbc                   = .FALSE.
     fesim%is_convection_bc         = .FALSE.
     fesim%is_flux_bc               = .FALSE.
+    fesim%is_prop_thermal          = .FALSE.
     ! Thermal: END
 
     fesim%skipFailed               = .FALSE.
@@ -376,6 +378,7 @@ contains
     call MPI_Bcast (               fesim%is_tbc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (     fesim%is_convection_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (           fesim%is_flux_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    call MPI_Bcast (           fesim%is_prop_thermal, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     ! Thermal: END
 
 

@@ -2359,6 +2359,57 @@ if (fesim%is_flux_bc) then
     end if
 end if
 
+if (fesim%is_prop_thermal) then
+    fname = 'propthermal.fipps'
+    open (unit=40, file=fname, status='old', action='read', iostat=io_error)
+    if (io_error == 0) then
+        read (40,*,iostat=read_error) rowcount
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was a problem reading the number of rows of the file'
+            close(40)
+            err_code=1
+            goto 9999
+        end if
+        if (rowcount < 1) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'At least one data line is required'
+            close(40)
+            err_code=1
+            goto 9999
+        end if
+
+        allocate(fesim%thermal%propthermals(1:rowcount))
+
+        do ii = 1, rowcount
+            read (40,'(2I10)',iostat=read_error) &
+                & fesim%thermal%propthermals(ii)%propid, &
+                  fesim%thermal%propthermals(ii)%tmidid
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error processing line', ii
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+
+            ! TODO: Validate that eid exists in the element table here
+            ! TODO: Validate that face is a valid face number for the
+            !       corresponding element type (e.g. 1-6 for lsolid20)
+        end do
+
+        close (40, iostat=io_error)
+        if (io_error /= 0) then
+            write(*,*) 'Error closing file ', fname
+            err_code=1
+            goto 9999
+        end if
+    else
+        write (*,*) 'Error opening file ', fname
+        err_code=1
+        goto 9999
+    end if
+end if
 
 !hier die weiteren Randbedingungen, Materialien einlesen
 !diese weiteren karten auch mit der input_process_line-subroutine aus der control auslesen lassen
