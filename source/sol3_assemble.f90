@@ -44,9 +44,8 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
 !
 ! Include
 !
-  use petscmat
-  use petscvec
-  use petsc
+#include "petsc/finclude/petscksp.h"
+  use petscksp
   use fesimulation_typen
 !
 ! =================================================================================================
@@ -60,13 +59,14 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
   Mat, intent(out)                  :: Cff, Cfc
   Vec, intent(out)                  :: Tf,Tc,Qf,Qc
 ! Internal Vectors/Matrices
-  Mat                               :: C
+  Mat                               :: C, Ccf, Ccc
   Vec                               :: T,Q
   Mat                               :: PermutMat
+  IS                                :: is_free, is_bc
+  PetscErrorCode                    :: ierr
 ! Internal other
   integer                           :: ii,jj,ll,nn
   integer                           :: err_code
-  integer,dimension(:)              :: node_ids
 !
 ! =================================================================================================
 !
@@ -76,10 +76,20 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
 ! =================================================================================================
 !
 ! Calculation
- ! Set the thermal_dof_map
- call sol3_set_thermal_dof_map(fesim)
- ! 13. Loop over thermal_dof_map and create the permutation matrix PermutMat for the reordering of all matrices
 
+! Set the thermal_dof_map
+ call sol3_set_thermal_dof_map(fesim)
+! Get index sets for free and constrained dofs
+  call sol3_get_dof_is(fesim,is_free,is_bc)
+! Get submatrices
+  call MatCreateSubMatrix(C, is_free, is_free, MAT_INITIAL_MATRIX, Cff, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_bc,   is_free, MAT_INITIAL_MATRIX, Ccf, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_bc,   is_bc,   MAT_INITIAL_MATRIX, Ccc, ierr); CHKERRQ(ierr)
+
+! Cleanup
+  call ISDestroy(is_free, ierr); CHKERRQ(ierr)
+  call ISDestroy(is_bc,   ierr); CHKERRQ(ierr)
 ! =================================================================================================
 !
 ! Error handling

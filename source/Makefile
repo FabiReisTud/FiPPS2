@@ -126,10 +126,8 @@ init_matrices.o \
 init_vectors.o \
 init_elem_proc_dist.o \
 sol1_get_stiffness_matrices.o \
-sol3_get_conduction_matrices.o \
-tsolid20_cond_control.o \
-tsolid20_cond.o\
-sol3_assemble_caa.o\
+sol3_assemble.o \
+sol3_get_dof_is.o\
 load_get_loadvector.o \
 sol1_solve.o \
 sol1_calculate_tse.o \
