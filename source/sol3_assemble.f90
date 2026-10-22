@@ -76,47 +76,8 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
 ! =================================================================================================
 !
 ! Calculation
- ! 11. Loop over all nodes, assign 0 to their row (NID) fesim%internal%thermal_dof_map
- nn = size(fesim%knoten%nodes)
- allocate(fesim%internals%thermal_dof_map(nn,4))
- do ii=1,nn
-    fesim%internals%thermal_dof_map(ii,1) = fesim%knoten%nodes(ii)%nid
- end do
-
- ! 12. Loop over all thermal boundary conditions, assign values to the row in thermal_dof_map if assigned
- ! 121. Loop over temperature BCs
- do ii=1,size(fesim%thermal%tbcs)
-    ll = findloc(fesim%internals%thermal_dof_map(:,1),fesim%thermal%tbcs(ii)%nid,dim=1) ! Find index of nid in thermal_dof_map
-    fesim%internals%thermal_dof_map(ll,2) = 1.                                          ! Set the type to 1 to signal temperature bc
-    fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%tbcs(ii)%temperature          ! Set the temperature value at the node
- end do
-
- ! 122. Loop over flux BCs
- do ii=1,size(fesim%thermal%convections)
-    node_ids(1) = fesim%thermal%fluxes(ii)%nid1
-    node_ids(2) = fesim%thermal%fluxes(ii)%nid2
-    node_ids(3) = fesim%thermal%fluxes(ii)%nid3
-    node_ids(4) = fesim%thermal%fluxes(ii)%nid4
-    node_ids(5) = fesim%thermal%fluxes(ii)%nid5
-    node_ids(6) = fesim%thermal%fluxes(ii)%nid6
-    node_ids(7) = fesim%thermal%fluxes(ii)%nid7
-    node_ids(8) = fesim%thermal%fluxes(ii)%nid8
-
-    do jj=1,8
-        ll = findloc(fesim%internals%thermal_dof_map(:,1),node_ids(jj),dim=1)   ! Find index of nid in thermal_dof_map
-        if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
-            write(*,*) ''
-        end if
-        fesim%internals%thermal_dof_map(ll,2) = 2.                              ! Set the type to 1 to signal temperature bc
-        fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%fluxes(ii)%q      ! Set the temperature value at the node
-    end do
-
- end do
-
- ! 123. Loop over convection BCs
-
- ! 124. Loop over MPCs
-
+ ! Set the thermal_dof_map
+ call sol3_set_thermal_dof_map(fesim)
  ! 13. Loop over thermal_dof_map and create the permutation matrix PermutMat for the reordering of all matrices
 
 ! =================================================================================================
