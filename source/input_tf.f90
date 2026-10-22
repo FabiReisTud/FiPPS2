@@ -2187,11 +2187,15 @@ if (fesim%is_convection_bc) then
         allocate(fesim%thermal%convections(1:rowcount))
 
         do ii = 1, rowcount
-            read (39,'(4I10,2E23.16)',iostat=read_error) &
+            read (39,'(8I10,2E23.16)',iostat=read_error) &
                 & fesim%thermal%convections(ii)%nid1, &
                 & fesim%thermal%convections(ii)%nid2, &
                 & fesim%thermal%convections(ii)%nid3, &
                 & fesim%thermal%convections(ii)%nid4, &
+                & fesim%thermal%convections(ii)%nid5, &
+                & fesim%thermal%convections(ii)%nid6, &
+                & fesim%thermal%convections(ii)%nid7, &
+                & fesim%thermal%convections(ii)%nid8, &
                 & fesim%thermal%convections(ii)%h, &
                 & fesim%thermal%convections(ii)%T_amb
             if (read_error /= 0) then
@@ -2253,11 +2257,15 @@ if (fesim%is_flux_bc) then
         allocate(fesim%thermal%fluxes(1:rowcount))
 
         do ii = 1, rowcount
-            read (40,'(4I10,E23.16)',iostat=read_error) &
+            read (40,'(8I10,E23.16)',iostat=read_error) &
                 & fesim%thermal%fluxes(ii)%nid1, &
                 & fesim%thermal%fluxes(ii)%nid2, &
                 & fesim%thermal%fluxes(ii)%nid3, &
                 & fesim%thermal%fluxes(ii)%nid4, &
+                & fesim%thermal%fluxes(ii)%nid5, &
+                & fesim%thermal%fluxes(ii)%nid6, &
+                & fesim%thermal%fluxes(ii)%nid7, &
+                & fesim%thermal%fluxes(ii)%nid8, &
                 & fesim%thermal%fluxes(ii)%q
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname

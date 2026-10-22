@@ -129,6 +129,7 @@ sol1_get_stiffness_matrices.o \
 sol3_get_conduction_matrices.o \
 tsolid20_cond_control.o \
 tsolid20_cond.o\
+sol3_assemble_caa.o\
 load_get_loadvector.o \
 sol1_solve.o \
 sol1_calculate_tse.o \
@@ -178,7 +179,7 @@ all: $(PROGRAM)
 
 $(PROGRAM): kompilieren move
 
-kompilieren: 
+kompilieren:
 	-${FLINKER} -o $(PROGRAM) $(FIPPS2_LIB) $(APAME_LIB) $(PANEL2D_LIB) $(XFOILWRAPPER_LIB) ${SLEPC_LIB} -L../include/ -lmodule -L../ -luseroutput
 
 move:

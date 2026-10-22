@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -58,13 +58,13 @@ subroutine load_get_loadvector(fesim, FaS, Fout, scloop)
   double precision, dimension(:), allocatable   :: Fa           ! Kraftvektor ohne gesperrte Freiheiten
   double precision, dimension(fesim%num_dof)    :: Fout         ! gesperrter Freiheitenvektor
   integer                                       :: ii
-  
+
   PetscInt                                      :: pii
   PetscErrorCode                                :: ierr
   PetscScalar                                   :: v
   Vec                                           :: FaS          ! Kraftvektor ohne gesperrte Freiheiten als Sparse-Vektor
   integer                                       :: scloop
-  
+
   integer                                       :: err_code=0
 !
 ! =================================================================================================
@@ -78,13 +78,13 @@ subroutine load_get_loadvector(fesim, FaS, Fout, scloop)
 ! =================================================================================================
 !
 ! Calculation
-  
+
   Fout = 0.d0
 
   if (fesim%is_load == .true.) then
-     
+
     call load_loadvector (fesim, Fa, Fout, scloop)
-     
+
   end if
 
   if ((fesim%ausgabe%outputVTK .eq. .true.) .or. (fesim%ausgabe%outputUser .eq. .true.)) then
@@ -99,7 +99,7 @@ subroutine load_get_loadvector(fesim, FaS, Fout, scloop)
   endif
   !
   ! =================================================================================================
-  
+
   ! convert Fa to sparse
   do ii = 1, fesim%internals%dim_dof
     if (Fa(ii) .NE. 0.d0) then
@@ -108,23 +108,23 @@ subroutine load_get_loadvector(fesim, FaS, Fout, scloop)
       call VecSetValue(FaS, pii, v, INSERT_VALUES, ierr); CHKERRQ(ierr)
     end if
   end do
-  
+
   deallocate(Fa)
 !
 ! =================================================================================================
 !
 ! Error handling
-!  
+!
 9999 continue
 
   if (err_code /= 0) then
-   
+
     write(*,*)                      'An error occured in subroutine'
     write(*,*)                      'load_get_loadvector'
     write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
     write(*,*)                      'exit program '
     stop
-   
+
   end if
-  
+
 end subroutine load_get_loadvector

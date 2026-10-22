@@ -31,6 +31,10 @@ module thermal_typen
     integer :: nid2 = 0              ! ID of nid2
     integer :: nid3 = 0              ! ID of nid3
     integer :: nid4 = 0              ! ID of nid4
+    integer :: nid5 = 0              ! ID of nid5
+    integer :: nid6 = 0              ! ID of nid6
+    integer :: nid7 = 0              ! ID of nid7
+    integer :: nid8 = 0              ! ID of nid8
     double precision :: h = 0.d0    ! Film coefficient, q = Q/A = h * (T - T_amb)
     double precision :: T_amb = 0.d0    ! Ambient temperature at Face
   end type thermal_convection_bc_type
@@ -40,6 +44,10 @@ module thermal_typen
     integer :: nid2 = 0              ! ID of nid2
     integer :: nid3 = 0              ! ID of nid3
     integer :: nid4 = 0              ! ID of nid4
+    integer :: nid5 = 0              ! ID of nid5
+    integer :: nid6 = 0              ! ID of nid6
+    integer :: nid7 = 0              ! ID of nid7
+    integer :: nid8 = 0              ! ID of nid8
     double precision :: q = 0.d0    ! Heat flux across face
   end type thermal_flux_bc_type
 

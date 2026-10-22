@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -21,10 +21,10 @@
 !> \file assemble_aa.f90
 ! =================================================================================================
 !
-!>  \brief      subroutine for assembling element stiffness matrix to aa-Part of the total 
+!>  \brief      subroutine for assembling element stiffness matrix to aa-Part of the total
 !>              system matrix
 !
-!>  \details    subroutine assembles element stiffness matrix of shell element to aa-Part 
+!>  \details    subroutine assembles element stiffness matrix of shell element to aa-Part
 !>              of the total system stiffness matrix
 !
 !>  \author     Martin Rädel, TU Dresden, Diplomarbeit  08.12.2009
@@ -34,7 +34,7 @@
 !> $Author: s1080304 $
 !> $Revision: 484 $
 !> $Date: 2024-10-18 16:28:29 +0200 (Fr, 18. Okt 2024) $
-!                       
+!
 !
 ! =================================================================================================
 
@@ -96,18 +96,21 @@ double precision, dimension(num_nodes_el*ndof,num_nodes_el*ndof)                
 !
   transNodeCoords = .false.
   do ii = 1,num_nodes_el
-    if (fesim%knoten%nodes(node_ids(ii))%cid .ne. 0) then
+    if (fesim%knoten%nodes(node_ids(ii))%cid .ne. 0) then ! check if any node has a custom Coordinate System
       transNodeCoords = .true.
       exit
     end if
   end do
-  
+
   if (transNodeCoords .eq. .true.) then
-    call nodalCoordSysTransMat(fesim,num_nodes_el,node_ids,transMat)
-    Kel = matmul(matmul(transpose(transMat),Kel),transMat)
+    call nodalCoordSysTransMat(fesim,num_nodes_el,node_ids,transMat)    ! if custom coordinate system,
+    Kel = matmul(matmul(transpose(transMat),Kel),transMat)              !  transform the element stiffness matrix to that coordinate system
   end if
 
-! Determine indizes
+! Determine whether the node part of spc or mpc by looking it up in the num_dof_vec
+! index>0 --> normal equation number
+! index=0 --> spc
+! index<0 --> mpc
 do ii = 1,num_nodes_el
   do jj = 1,ndof
     index((ii-1)*ndof+jj) = fesim%internals%num_dof_vec((node_ids(ii)-1)*ndof+jj)
@@ -125,7 +128,7 @@ do ii = 1,size(Kel,1)
       if (jjj .NE. 0) then
         ! if matrix entry is not equal zero
         if (Kel(ii,jj) .NE. 0.d0) then
-          ! if at least one dof is an dependend of an MPC 
+          ! if at least one dof is an dependend of an MPC
           if (iii .LT. 0 .OR. jjj .LT. 0) then
             ! if only the first dof is a dependend dof of an MPC
             if (iii .LT. 0 .AND. jjj .GT. 0) then
@@ -190,13 +193,13 @@ end do
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'assemble_aa'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return

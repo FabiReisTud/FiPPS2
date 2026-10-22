@@ -49,7 +49,7 @@ subroutine sol3_get_conduction_matrices(fesim,CaaS)
 ! Calculation
 !
   if (fesim%is_lsolid20 == .true. .AND. fesim%is_thermal == .true.) then
-    call tsolid20_cond_control(fesim, CaaS)
+    call sol3_tsolid20_cond_control(fesim, CaaS)
   end if
 !
 ! =================================================================================================

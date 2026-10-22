@@ -32,7 +32,7 @@
 !> @author Fabian Reisener, TU Dresden, WM 2026
 !
 ! =================================================================================================
-subroutine tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
+subroutine sol3_tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
 ! =================================================================================================
 ! use
 !

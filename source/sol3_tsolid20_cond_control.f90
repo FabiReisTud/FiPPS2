@@ -32,7 +32,7 @@
 !> @author Fabian Reisener, TU Dresden, WM 2026
 !
 ! =================================================================================================
-subroutine tsolid20_cond_control(fesim,CaaS)
+subroutine sol3_tsolid20_cond_control(fesim,CaaS)
 ! =================================================================================================
 ! Use
 !
@@ -56,7 +56,7 @@ implicit none
 !
 ! Interfaces
 interface
-  subroutine tsolid20_cond(fesim, node_coords, node_ids, lsolid20Num, elemNum, k, tsolid20_C)
+  subroutine sol3_tsolid20_cond(fesim, node_coords, node_ids, lsolid20Num, elemNum, k, tsolid20_C)
     use fesimulation_typen
     use thermal_typen
     implicit none
@@ -66,7 +66,7 @@ interface
     integer, intent(in)                  :: lsolid20Num, elemNum
     type(thermal_curve_type), intent(in) :: k
     double precision, intent(out)        :: tsolid20_C(20,20)
-  end subroutine tsolid20_cond
+  end subroutine sol3_tsolid20_cond
 end interface
 ! =================================================================================================
 !
@@ -139,7 +139,7 @@ PetscErrorCode                      :: ierr
     end if
 
     ! tsolid20_C holen
-    call tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
+    call sol3_tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
     ! Elementmatrix der CaaS hinzufügen
  end do
 !
