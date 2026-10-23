@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -95,7 +95,7 @@ interface
         double precision, dimension(:), allocatable,   intent(out), optional  :: Mcrit             !< Kritische MACH-Zahl
         logical,                                       intent(in), optional   :: output            !< Flag, if PANEL2D should write any output
     end subroutine xfoilwrapper_main
-    
+
     subroutine load_add_aeropressure(fesim, scloop, pAeroElem, F_total_aero)
         use fesimulation_typen
         use konstanten
@@ -114,7 +114,7 @@ end interface
 
 !
 ! =================================================================================================
-! 
+!
 ! Data types
 !
 ! Input
@@ -173,7 +173,7 @@ if (aeroloadID .ne. 0) then
         write(*,*) 'Originalmodell'
         call apame_main(fname=filename,readmodel=.true.,pressures=pressures,F_total=F_total,cdi=cdi,output=fesim%ausgabe%outputVTK)
       end if
-      
+
       if (fesim%ausgabe%outputApamePressures .eq. .true.) then
         open (apamePressureOutFile, file = trim(filename) // '_pressure.res', status='UNKNOWN')
         write(apamePressureOutFile,'(E27.17)') F_total(1)
@@ -229,7 +229,7 @@ if (aeroloadID .ne. 0) then
       end if
     else if (fesim%lasten%aeroload2ds(aeroloadID)%mthd .eq. 2) then
       write(filename,'(A11,I4.4)') "panel2d_sc_", scloop
- 
+
       if (allocated(fesim%internals%aeroDispl) .eq. .true.) then
         call xfoilwrapper_main(fname=filename,readmodel=.false.,inviscid=.false.,displacements=fesim%internals%aeroDispl,pressures=pressures,F_total=F_total,paneling=.false.,cd=cdi,output=fesim%ausgabe%outputVTK)
       else
@@ -238,7 +238,7 @@ if (aeroloadID .ne. 0) then
       end if
     else if (fesim%lasten%aeroload2ds(aeroloadID)%mthd .eq. 3) then
       write(filename,'(A11,I4.4)') "panel2d_sc_", scloop
- 
+
       if (allocated(fesim%internals%aeroDispl) .eq. .true.) then
         call xfoilwrapper_main(fname=filename,readmodel=.false.,inviscid=.true.,displacements=fesim%internals%aeroDispl,pressures=pressures,F_total=F_total,paneling=.false.,cd=cdi,output=fesim%ausgabe%outputVTK)
       else
@@ -282,7 +282,7 @@ if (err_code /= 0) then
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return

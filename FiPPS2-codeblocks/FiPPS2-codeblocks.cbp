@@ -234,78 +234,30 @@
 			<Option weight="0" />
 		</Unit>
 		<Unit filename="../include/Makefile" />
-		<Unit filename="../include/ausgabe_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/dof_types.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/eigenschaften_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/element_typen.f90">
-			<Option weight="1" />
-		</Unit>
-		<Unit filename="../include/ergebnis_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/failure_criteria.f90">
-			<Option weight="2" />
-		</Unit>
-		<Unit filename="../include/failurecriteria_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/fesimulation_typen.f90">
-			<Option weight="2" />
-		</Unit>
-		<Unit filename="../include/globale_variablen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/integration_schemes.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/internals_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/knoten_typen.f90">
-			<Option weight="1" />
-		</Unit>
-		<Unit filename="../include/konstanten.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/koordinatensystem_typen.f90">
-			<Option weight="1" />
-		</Unit>
-		<Unit filename="../include/laminat_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/last_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/mat_func.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/material_typen.f90">
-			<Option weight="1" />
-		</Unit>
-		<Unit filename="../include/pre_assemble_types.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/randbedingung_typen.f90">
-			<Option weight="1" />
-		</Unit>
-		<Unit filename="../include/residual_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/thermal_typen.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/vec_func.f90">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="../include/vtk_variablen.f90">
-			<Option weight="1" />
-		</Unit>
+		<Unit filename="../include/ausgabe_typen.f90" />
+		<Unit filename="../include/dof_types.f90" />
+		<Unit filename="../include/eigenschaften_typen.f90" />
+		<Unit filename="../include/element_typen.f90" />
+		<Unit filename="../include/ergebnis_typen.f90" />
+		<Unit filename="../include/failure_criteria.f90" />
+		<Unit filename="../include/failurecriteria_typen.f90" />
+		<Unit filename="../include/fesimulation_typen.f90" />
+		<Unit filename="../include/globale_variablen.f90" />
+		<Unit filename="../include/integration_schemes.f90" />
+		<Unit filename="../include/internals_typen.f90" />
+		<Unit filename="../include/knoten_typen.f90" />
+		<Unit filename="../include/konstanten.f90" />
+		<Unit filename="../include/koordinatensystem_typen.f90" />
+		<Unit filename="../include/laminat_typen.f90" />
+		<Unit filename="../include/last_typen.f90" />
+		<Unit filename="../include/mat_func.f90" />
+		<Unit filename="../include/material_typen.f90" />
+		<Unit filename="../include/pre_assemble_types.f90" />
+		<Unit filename="../include/randbedingung_typen.f90" />
+		<Unit filename="../include/residual_typen.f90" />
+		<Unit filename="../include/thermal_typen.f90" />
+		<Unit filename="../include/vec_func.f90" />
+		<Unit filename="../include/vtk_variablen.f90" />
 		<Unit filename="../makeconfig.mk" />
 		<Unit filename="../outputLibrary/Makefile" />
 		<Unit filename="../outputLibrary/sol1_output_user.f90">
@@ -322,34 +274,31 @@
 		</Unit>
 		<Unit filename="../source/Makefile" />
 		<Unit filename="../source/aero_coupling.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/aeroload_prepare.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/assemble_aa.f90">
-			<Option weight="3" />
-		</Unit>
-		<Unit filename="../source/assemble_thermal.f90">
-			<Option target="&lt;{~None~}&gt;" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_cosinematrix.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_couplingmatrix.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_geostiff.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_geostiff_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_get_properties.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_prepareProperties.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_rotation.f90">
 			<Option weight="1" />
@@ -358,73 +307,73 @@
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_stiff.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_stiff_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_stress.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/beam2_temploadvec_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/blow_up_stiff.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/boundary_coupling_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/boundary_mpc_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/boundary_spc_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/boundary_varload_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/clear_node_node_con.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/cosinematrix_esys.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/estimate_number_nonzeros.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/estimate_number_nonzeros_block.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/estimate_number_nonzeros_simple.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/failure_prepare.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/free_globals.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/get_beam2_temperatures.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/get_inverse3.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/get_lsolid20_temperatures.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/get_node_node_con.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/get_node_temperatures.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/get_quad8_temperatures.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/get_restored_eigenvektors.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/hexa20_shapefunctions_x_y_z.f90">
 			<Option weight="1" />
@@ -436,151 +385,154 @@
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/impc_contact_node_beam2.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/impc_contact_node_lsolid20.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/impc_contact_node_quad8.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/impc_contact_quad8_pointprojection.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/impc_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/init_elem_proc_dist.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/init_matrices.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/init_values.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/init_vectors.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/initstress_loads.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/input_process_line.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/input_tf.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/koopt_sol1_output.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_add_aeropressure.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_add_aeropressure_beam2.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_add_aeropressure_quad8.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_force.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_get_loadvector.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_loadvector.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_moment.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_p20load.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_p2load.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_p8load.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/load_remove_aeropressure.f90">
-			<Option weight="3" />
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="../source/lsolid20_cond.f90">
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_eps_th.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_extrapolate_gp_strain.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_extrapolate_gp_stress.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_geostiff.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_geostiff_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_initstressvec.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_prepareProperties.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_results_elem_lay.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_stiff.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_stiff_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_strainEnergy.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_strainEnergy_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_strain_displ_matrix.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_strains_stresses.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_temploadvec.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_temploadvec_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/lsolid20_transformation_matrix.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/main.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/mat1_calc_missing_value.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/mat20.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/mat8.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/nodalCoordSysTransMat.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/principalValues.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/printdisplacements.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_ansatzfunction_xieta.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_area.f90">
 			<Option weight="1" />
@@ -592,7 +544,7 @@
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_geostiff_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_ip_coordsys.f90">
 			<Option weight="1" />
@@ -604,176 +556,193 @@
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_normals.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_prepareproperties.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_result_extrapolation_transform.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_results_elem.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_results_elem_lay.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_results_node.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_stiff.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_stiff_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_strainEnergy.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_strainEnergy_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8_temploadvec_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/quad8s_temploadvec.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_calculate_tse.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_get_stiffness_matrices.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_get_utot.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_advila.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_default.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_glawi.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_glawi2.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_hymowi.f90">
-			<Option weight="2" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_hymowi2.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_koopt.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_optitube.f90">
-			<Option weight="2" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_output_sab.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_reaction_forces.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol1_solve.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol2_extract_eigenvalues.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol2_get_geometric_stiffness_matrix.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol2_output_control.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol2_reset_kgeo.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol2_solve.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/sol2_solve_condensed_problem.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
-		<Unit filename="../source/sol3_get_conduction_matrices.f90" />
+		<Unit filename="../source/sol3_assemble.f90">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="../source/sol3_get_conduction_matrices.f90">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="../source/sol3_get_dof_is.f90">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="../source/sol3_get_permut_mat.f90">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="../source/sol3_set_thermal_dof_map.f90">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="../source/sol3_tsolid20_cond.f90">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="../source/sol3_tsolid20_cond_control.f90">
+			<Option weight="1" />
+		</Unit>
 		<Unit filename="../source/spc1_mod_dof.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/temperature_loads.f90">
-			<Option weight="3" />
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="../source/thermal_solve.f90">
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/transform_eg_cmat.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/transform_eg_strain.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/transform_eg_stress.f90">
-			<Option weight="3" />
-		</Unit>
-		<Unit filename="../source/tsolid20_cond.f90">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../source/tsolid20_cond_control.f90">
-			<Option target="&lt;{~None~}&gt;" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/update_geometry.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutcelldata.f90">
-			<Option weight="2" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutcelldata_int.f90">
-			<Option weight="2" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutcelldata_vector.f90">
-			<Option weight="2" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkouteig.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutelemcoord.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutelementprop.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutend.f90">
-			<Option weight="2" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutfixeddispl.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutmesh.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutpointscalar.f90">
-			<Option weight="2" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutpointvektor.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutprep.f90">
-			<Option weight="2" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/vtkoutstatic.f90">
-			<Option weight="3" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/writeCompTime.f90">
 			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/write_matrix.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/write_quad_matrix.f90">
-			<Option weight="0" />
+			<Option weight="1" />
 		</Unit>
 		<Unit filename="../source/writeinput.f90">
 			<Option weight="1" />

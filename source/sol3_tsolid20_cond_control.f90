@@ -32,14 +32,11 @@
 !> @author Fabian Reisener, TU Dresden, WM 2026
 !
 ! =================================================================================================
-subroutine sol3_tsolid20_cond_control(fesim,CaaS)
+subroutine sol3_tsolid20_cond_control(fesim,C)
 ! =================================================================================================
 ! Use
 !
-use konstanten
 use fesimulation_typen
-use thermal_typen
-use globale_variablen
 !
 ! =================================================================================================
 !
@@ -57,8 +54,8 @@ implicit none
 ! Interfaces
 interface
   subroutine sol3_tsolid20_cond(fesim, node_coords, node_ids, lsolid20Num, elemNum, k, tsolid20_C)
+    use integration_schemes
     use fesimulation_typen
-    use thermal_typen
     implicit none
     type(fe_simulation), intent(in)      :: fesim
     double precision, intent(in)         :: node_coords(20,3)
@@ -78,21 +75,20 @@ type(fe_simulation), intent(in)         :: fesim
 !
 ! Output
 !
-
+Mat,intent(out)                 :: C !< C
 !
 ! Input + Output
 !
-Mat                 :: CaaS !< CaaS
 !
 ! Internal
 !
-integer, dimension(20)              :: node_ids
+PetscInt, dimension(20)             :: node_ids
 double precision, dimension(20,3)   :: node_coords
 double precision, dimension(20,20)  :: tsolid20_C
 
-integer                             :: ii,jj, kk, ll,lsolid20Num,elemNum
-integer                             :: err_code=0
-integer                             :: pid, tmidid
+PetscInt                            :: ii,jj, kk,ll,e,lsolid20Num,elemNum,nnodes_per_elem
+PetscInt                            :: err_code=0
+PetscInt                            :: pid, tmidid
 type(thermal_curve_type)            :: k
 
 PetscMPIInt                         :: rank
@@ -101,6 +97,7 @@ PetscErrorCode                      :: ierr
 ! =================================================================================================
 !
 ! Initialisation
+nnodes_per_elem=20
 !
 !
 ! =================================================================================================
@@ -109,6 +106,15 @@ PetscErrorCode                      :: ierr
 !
  call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
 
+! Create global conductivity matrix C
+ call MatCreateAIJ( PETSC_COMM_WORLD,               &
+                    PETSC_DECIDE, PETSC_DECIDE,     &
+                    nglobal, nglobal,               &
+                    nnodes_per_elem, PETSC_NULL_INTEGER, &
+                    nnodes_per_elem, PETSC_NULL_INTEGER, &
+                    C, ierr)
+
+! Iter through all the elements
  do jj = 1,size(fesim%elemente%lsolid20s,1)
     if (mpi_lsolid20_proc_dist(jj) .NE. rank) cycle
 
@@ -138,9 +144,30 @@ PetscErrorCode                      :: ierr
        goto 9999
     end if
 
-    ! tsolid20_C holen
+    ! Get node_ids and node_coords
+    do ii=1,20
+        node_ids(ii) = fesim%elemente%lsolid20s(jj)%nids(ii)
+        ll = 0
+        do kk=1,size(fesim%knoten%nodes)
+            if (fesim%knoten%nodes(kk)%nid == node_ids(ii)) then
+                ll = kk
+                exit
+            end if
+        end do
+
+        if (ll == 0) then
+            write(*,*) 'Could not find NID', node_ids(ii), 'in list of global nodes fesim%knoten%nodes.'
+            err_code = 2
+            goto 9999
+        end if
+
+        node_coords(ii,:) = fesim%knoten%nodes(ll)%coords
+    end do
+
+    ! Get local tsolid20_C-Matrix
     call sol3_tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
-    ! Elementmatrix der CaaS hinzufügen
+    ! Assemble
+    call MatSetValues(  C,20,node_ids-1,20,node_ids-1,lsolid20_C(1:20,1:20,e),ADD_VALUES,ierr)
  end do
 !
 ! =================================================================================================

@@ -46,13 +46,16 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
 !
 #include "petsc/finclude/petscksp.h"
   use petscksp
+#include "petsc/finclude/petscis.h"
+  use petscis
   use fesimulation_typen
+!
+  implicit none
 !
 ! =================================================================================================
 !
 ! Data types
 !
-  implicit none
 ! Input
   type(fe_simulation),intent(inout) :: fesim
 ! Output
@@ -65,8 +68,7 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
   IS                                :: is_free, is_bc
   PetscErrorCode                    :: ierr
 ! Internal other
-  integer                           :: ii,jj,ll,nn
-  integer                           :: err_code
+  integer                           :: err_code=0
 !
 ! =================================================================================================
 !
@@ -75,13 +77,41 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
 !
 ! =================================================================================================
 !
+! Interfaces
+interface
+  subroutine sol3_set_thermal_dof_map(fesim)
+    use fesimulation_typen
+    implicit none
+    type(fe_simulation), intent(inout) :: fesim
+  end subroutine sol3_set_thermal_dof_map
+
+  subroutine sol3_get_dof_is(fesim,is_free,is_bc)
+    use fesimulation_typen
+    use petscis
+    implicit none
+    type(fe_simulation), intent(in) :: fesim
+    IS, intent(out)                 :: is_free, is_bc
+  end subroutine sol3_get_dof_is
+
+  subroutine sol3_tsolid20_cond_control(fesim,C)
+    use fesimulation_typen
+    use petscmat
+    implicit none
+    type(fe_simulation), intent(in) :: fesim
+    Mat,intent(out)                 :: C
+  end subroutine sol3_tsolid20_cond_control
+end interface
+! =================================================================================================
+!
 ! Calculation
 
 ! Set the thermal_dof_map
- call sol3_set_thermal_dof_map(fesim)
+  call sol3_set_thermal_dof_map(fesim)
 ! Get index sets for free and constrained dofs
   call sol3_get_dof_is(fesim,is_free,is_bc)
-! Get submatrices
+! Assemble C-Matrix
+  call sol3_tsolid20_cond_control(fesim,C)
+! Get C-submatrices
   call MatCreateSubMatrix(C, is_free, is_free, MAT_INITIAL_MATRIX, Cff, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_bc,   is_free, MAT_INITIAL_MATRIX, Ccf, ierr); CHKERRQ(ierr)
@@ -90,6 +120,9 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
 ! Cleanup
   call ISDestroy(is_free, ierr); CHKERRQ(ierr)
   call ISDestroy(is_bc,   ierr); CHKERRQ(ierr)
+  call MatDestroy(C,ierr); CHKERRQ(ierr)
+  call MatDestroy(Ccf,ierr); CHKERRQ(ierr)
+  call MatDestroy(Ccc,ierr); CHKERRQ(ierr)
 ! =================================================================================================
 !
 ! Error handling

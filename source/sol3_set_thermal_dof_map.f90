@@ -38,6 +38,8 @@ subroutine sol3_set_thermal_dof_map(fesim)
 !
 ! Include
 !
+#include "petsc/finclude/petscksp.h"
+  use petscksp
   use fesimulation_typen
 !
 ! =================================================================================================
@@ -51,7 +53,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
 ! Internal other
   integer                           :: ii,jj,ll,nn
   integer                           :: err_code
-  integer,dimension(:)              :: node_ids
+  integer,dimension(8)              :: node_ids
 !
 ! =================================================================================================
 !
@@ -72,7 +74,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
  ! 12. Loop over all thermal boundary conditions, assign values to the row in thermal_dof_map if assigned
  ! 121. Loop over temperature BCs
  do ii=1,size(fesim%thermal%tbcs)
-    ll = findloc(fesim%internals%thermal_dof_map(:,1),fesim%thermal%tbcs(ii)%nid,dim=1) ! Find index of nid in thermal_dof_map
+    ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(fesim%thermal%tbcs(ii)%nid),dim=1) ! Find index of nid in thermal_dof_map
     if (ll == 0) then
         write(*,*) 'NID ',fesim%thermal%tbcs(ii)%nid,' from TemperatureBC could not be found in thermal_dof_map!'
         err_code = 2
@@ -95,7 +97,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
     node_ids(8) = fesim%thermal%fluxes(ii)%nid8
 
     do jj=1,8
-        ll = findloc(fesim%internals%thermal_dof_map(:,1),node_ids(jj),dim=1)   ! Find index of nid in thermal_dof_map
+        ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(node_ids(jj)),dim=1)   ! Find index of nid in thermal_dof_map
         if (ll == 0) then
             write(*,*) 'NID ',node_ids(jj),' from fluxBc could not be found in thermal_dof_map!'
             err_code = 2
@@ -129,7 +131,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
     node_ids(8) = fesim%thermal%convections(ii)%nid8
 
     do jj=1,8
-        ll = findloc(fesim%internals%thermal_dof_map(:,1),node_ids(jj),dim=1)   ! Find index of nid in thermal_dof_map
+        ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(node_ids(jj)),dim=1)   ! Find index of nid in thermal_dof_map
         if (ll == 0) then
             write(*,*) 'NID ',node_ids(jj),' from convectionBc could not be found in thermal_dof_map!'
             err_code = 2
@@ -139,7 +141,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
             write(*,*) 'Cannot assign convectionBc to Node with ID ',node_ids(jj)
             if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
                 write(*,*) 'Since it has already been assigned a temperatureBC'
-            elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.)
+            elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.) then
                 write(*,*) 'Since it has already been assigned a fluxBC'
             else
                 write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
@@ -154,7 +156,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
  end do
  ! 124. Loop over MPCs
  do ii=1,size(fesim%randbedingungen%mpcs)
-    ll = findloc(fesim%internals%thermal_dof_map(:,1),fesim%randbedingungen%mpcs(ii)%dependend%nid,dim=1)   ! Find index of nid in thermal_dof_map
+    ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(fesim%randbedingungen%mpcs(ii)%dependend%nid),dim=1)   ! Find index of nid in thermal_dof_map
     if (ll == 0) then
         write(*,*) 'NID ',fesim%randbedingungen%mpcs(ii)%dependend%nid,' from MPCID: ',fesim%randbedingungen%mpcs(ii)%sid,' could not be found in thermal_dof_map!'
         err_code = 2
@@ -165,9 +167,9 @@ subroutine sol3_set_thermal_dof_map(fesim)
         write(*,*) 'Cannot assign MPCID: ',fesim%randbedingungen%mpcs(ii)%sid,' to dependent Node with ID ',fesim%randbedingungen%mpcs(ii)%dependend%nid
         if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
             write(*,*) 'Since it has already been assigned a temperatureBC'
-        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.)
+        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.) then
             write(*,*) 'Since it has already been assigned a fluxBC'
-        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 3.)
+        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 3.) then
             write(*,*) 'Since it has already been assigned a convectionBC'
         else
             write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)

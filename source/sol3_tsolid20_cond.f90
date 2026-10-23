@@ -38,7 +38,6 @@ subroutine sol3_tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,t
 !
  use integration_schemes
  use fesimulation_typen
- use thermal_typen
 !
 ! =================================================================================================
 !
