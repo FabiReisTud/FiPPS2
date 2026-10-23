@@ -48,6 +48,8 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
   use petscksp
 #include "petsc/finclude/petscis.h"
   use petscis
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use fesimulation_typen
 !
   implicit none
@@ -100,6 +102,20 @@ interface
     type(fe_simulation), intent(in) :: fesim
     Mat,intent(out)                 :: C
   end subroutine sol3_tsolid20_cond_control
+
+  subroutine sol3_get_q_vec(fesim,q)
+      use petscvec
+      use fesimulation_typen
+      type(fe_simulation), intent(in)   :: fesim
+      Vec,intent(out)                   :: q
+  end subroutine
+
+  subroutine sol3_get_t_vec(fesim,T)
+      use petscvec
+      use fesimulation_typen
+      type(fe_simulation), intent(in)   :: fesim
+      Vec,intent(out)                   :: T
+  end subroutine
 end interface
 ! =================================================================================================
 !
@@ -116,13 +132,21 @@ end interface
   call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_bc,   is_free, MAT_INITIAL_MATRIX, Ccf, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_bc,   is_bc,   MAT_INITIAL_MATRIX, Ccc, ierr); CHKERRQ(ierr)
-
+! Get Q, Qf-Vectors
+  call sol3_get_q_vec(fesim,Q)
+  call VecGetSubVector(Q,is_free,Qf,ierr); CHKERRQ(ierr)
+! Get T, Tc-Vectors
+  call sol3_get_t_vec(fesim,T)
+  call VecGetSubVector(T,is_bc,Tc,ierr); CHKERRQ(ierr)
 ! Cleanup
   call ISDestroy(is_free, ierr); CHKERRQ(ierr)
   call ISDestroy(is_bc,   ierr); CHKERRQ(ierr)
   call MatDestroy(C,ierr); CHKERRQ(ierr)
   call MatDestroy(Ccf,ierr); CHKERRQ(ierr)
   call MatDestroy(Ccc,ierr); CHKERRQ(ierr)
+  call VecDestroy(Q,ierr); CHKERRQ(ierr)
+  call VecDestroy(T,ierr); CHKERRQ(ierr)
+
 ! =================================================================================================
 !
 ! Error handling

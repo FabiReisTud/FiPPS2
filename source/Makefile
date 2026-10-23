@@ -128,6 +128,8 @@ init_elem_proc_dist.o \
 sol1_get_stiffness_matrices.o \
 sol3_assemble.o \
 sol3_get_dof_is.o\
+sol3_get_q_vec.o\
+sol3_get_t_vec.o\
 sol3_set_thermal_dof_map.o \
 sol3_tsolid20_cond.f90\
 sol3_tsolid20_cond_control.f90\

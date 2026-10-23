@@ -1,5 +1,5 @@
 ===== COMBINED_FILE_INFO =====
-timecode: 2026-10-02_07-14-00_UTC
+timecode: 2026-10-23_08-45-59_UTC
 generated_by: combine_sources.sh
 
 ===== include/ausgabe_typen.f90 =====
@@ -2413,9 +2413,9 @@ end module failurecriteria_typen
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -2459,9 +2459,9 @@ use ergebnis_typen
 use thermal_typen
 
 implicit none
-  
+
 type fe_simulation
-  
+
   ! Notwendige Daten einer FE-Simulation
   type(nodes_type)              :: knoten
   type(elemente_type)           :: elemente
@@ -2519,14 +2519,14 @@ type fe_simulation
   logical                       :: is_multistep
   ! Thermal: Start
   logical                       :: is_thermal
-  logical                       :: is_mat_thermal
   logical                       :: is_mat_thermal_td
   logical                       :: is_tbc
   logical                       :: is_flux_bc
   logical                       :: is_convection_bc
+  logical                       :: is_prop_thermal
   ! Thermal: End
-  
-  
+
+
   ! Hilfsgrößen, um Aufwand zu sparen
   integer                       :: num_dof              ! number of dof in whole structure
   integer                       :: num_nodes            ! number of nodes
@@ -2534,7 +2534,7 @@ type fe_simulation
   integer                       :: num_loadcases        ! number of loadcases
   integer                       :: num_subcases         ! number of subcases
   integer                       :: num_cps              ! number of coulings(-sets)
-  
+
   ! Einstellungen der Berechnung und Ausgabe
   integer                       :: sol
   integer                       :: numEigVal = 1        ! number of Eigenvalues
@@ -2545,10 +2545,10 @@ type fe_simulation
   logical                       :: calculateTSE         ! true, wenn Gesamtdehnungsenergie (Total Strain Energy) berechnet werden soll
 
   logical                       :: calculateElementalTSE! true, wenn elementweise Gesamtdehnungsenergie (Total Strain Energy) berechnet werden soll
-  
+
   logical                       :: calculateReactForce  ! true, wenn die Reaktionskräfte in einem zweiten Berechnungsschritt bestimmt werden sollen
   logical                       :: globalReactForce     ! true, wenn die Reaktionskräfte im globalen statt im Knotenkoordinatensystem ausgegeben werden sollen
-  
+
   double precision              :: aeroDisplEps         ! Konvergenzkriterium für die Fluid-Strukturkopplung
 
 end type fe_simulation
@@ -2563,23 +2563,23 @@ contains
   subroutine init_default(fesim)
     ! =================================================================================================
     !
-    !	Header:		
+    !	Header:
     !
-    !	Content:	
+    !	Content:
     !
-    !	Input:		
+    !	Input:
     !
-    !	Output:		
+    !	Output:
     !
-    !	Internal:	
+    !	Internal:
     !
-    !	Calls:		
+    !	Calls:
     !
-    !	Called by:	
+    !	Called by:
     !
-    !	Author:		
+    !	Author:
     !
-    !	Revision:	
+    !	Revision:
     !
     ! =================================================================================================
     !
@@ -2610,9 +2610,9 @@ contains
     fesim%sol           = 1                  ! solution type; 1-linear static, 2-prelinearized buckling
     fesim%numEigVal     = 1                  ! number of Eigenvalues
     fesim%shellResPos   = 0                  ! Position der Ergebnisse für Schalenelemente 0 - MID, 1 - TOP,
-    
+
     fesim%blocksize = HUGE(fesim%blocksize)  ! set the blocksize to the maximum integer number
-    
+
     fesim%is_beam2                 = .FALSE.
     fesim%is_coord                 = .FALSE.
     fesim%is_coupling              = .FALSE.
@@ -2652,11 +2652,11 @@ contains
     fesim%is_multistep             = .FALSE.
     ! Thermal: START
     fesim%is_thermal               = .FALSE.
-    fesim%is_mat_thermal           = .FALSE.
     fesim%is_mat_thermal_td        = .FALSE.
     fesim%is_tbc                   = .FALSE.
     fesim%is_convection_bc         = .FALSE.
     fesim%is_flux_bc               = .FALSE.
+    fesim%is_prop_thermal          = .FALSE.
     ! Thermal: END
 
     fesim%skipFailed               = .FALSE.
@@ -2664,15 +2664,15 @@ contains
     fesim%calculateElementalTSE    = .FALSE.
     fesim%calculateReactForce      = .FALSE.
     fesim%globalReactForce         = .FALSE.
-    
+
     fesim%aeroDisplEps  = 0.01d0
-    
+
     fesim%internals%failed = .FALSE.
     fesim%internals%indexBeforeAeroP8Load = 0
     fesim%internals%highestLID = 0
     fesim%internals%indexBeforeAeroLoad = 0
     fesim%internals%highestLIDtemp = 0
-    
+
     fesim%ausgabe%outputVTK = .false.
     fesim%ausgabe%outputUser = .false.
     fesim%ausgabe%outputShort = .false.
@@ -2698,32 +2698,32 @@ contains
     9999 continue
 
     if (err_code /= 0) then
-    
+
       write(*,*)                      'An error occured in subroutine'
       write(*,*)                      'init_default'
       write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
       write(*,*)                      'exit program '
       stop
-    
+
     end if
 
   end subroutine init_default
 
   subroutine bcast_fesim(fesim)
-    
+
 #include "petsc/finclude/petscsys.h"
     use petscsys
-    
+
     implicit none
 
     type(fe_simulation) :: fesim
     PetscMPIInt     :: rank
     PetscErrorCode  :: ierr
-    
+
 #if !defined (PETSC_HAVE_MPIUNI)
-    
+
     call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
-    
+
     call MPI_Bcast (              fesim%num_dof, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (            fesim%num_nodes, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (         fesim%num_elements, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
@@ -2734,8 +2734,8 @@ contains
     call MPI_Bcast (            fesim%numEigVal, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (          fesim%shellResPos, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (            fesim%blocksize, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
-     
-    
+
+
     call MPI_Bcast (              fesim%is_node, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (             fesim%is_beam2, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (             fesim%is_quad8, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
@@ -2781,14 +2781,14 @@ contains
 
     ! Thermal: START
     call MPI_Bcast (           fesim%is_thermal, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
-    call MPI_Bcast (       fesim%is_mat_thermal, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (    fesim%is_mat_thermal_td, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (               fesim%is_tbc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (     fesim%is_convection_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     call MPI_Bcast (           fesim%is_flux_bc, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
+    call MPI_Bcast (           fesim%is_prop_thermal, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     ! Thermal: END
-    
-    
+
+
     call bcast_knoten(fesim%knoten,fesim%is_node)
     call bcast_element_typen(fesim%elemente,fesim%is_beam2,fesim%is_quad8,fesim%is_lsolid20)
     call bcast_eigenschaften(fesim%eigenschaften,fesim%is_pbeam,fesim%is_pshell,fesim%is_pcomp,fesim%is_plsolid)
@@ -2801,18 +2801,18 @@ contains
     call bcast_ergebnisse(fesim%ergebnisse)
     !residuals
     !thermal
-    call bcast_thermal(fesim%thermal,fesim%is_thermal,fesim%is_mat_thermal,fesim%is_mat_thermal_td,fesim%is_tbc,fesim%is_convection_bc,fesim%is_flux_bc)
+    call bcast_thermal(fesim%thermal,fesim%is_thermal,fesim%is_mat_thermal_td,fesim%is_tbc,fesim%is_convection_bc,fesim%is_flux_bc)
 
 #endif
-    
+
   end subroutine bcast_fesim
-  
+
   subroutine free_mem_fesim(fesim)
-  
-    implicit none 
-    
+
+    implicit none
+
     type(fe_simulation) :: fesim
-    
+
     call free_mem_eigenschaften(fesim%eigenschaften)
     call free_mem_element(fesim%elemente)
     call free_mem_fail(fesim%versagenskriterien)
@@ -2824,6 +2824,7 @@ contains
     call free_mem_rb(fesim%randbedingungen)
     call free_mem_residual(fesim%residuals)
     call free_mem_ergebnisse(fesim%ergebnisse)
+    call free_mem_thermal(fesim%thermal)
 
   end subroutine free_mem_fesim
 
@@ -2897,9 +2898,9 @@ end module globale_variablen
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -2918,7 +2919,7 @@ end module globale_variablen
 !
 !> @details
 !
-!> @author 
+!> @author
 !
 !> $Id: integration_schemes.f90 484 2024-10-18 14:28:29Z s1080304 $
 !> $Author: s1080304 $
@@ -2931,7 +2932,7 @@ module integration_schemes
     implicit none
 
     contains
-    
+
 ! =================================================================================================
 !
 !> @brief
@@ -2939,33 +2940,33 @@ module integration_schemes
 !
 !> @details
 !> Gibt die Koordinaten der Stützenstellen und die dazugehörigen Gewichte
-!> für je eine Gauss- (1,2,3 Stützstellen) oder eine Simpson-Integration 
+!> für je eine Gauss- (1,2,3 Stützstellen) oder eine Simpson-Integration
 !> (1,3,5,7,9 Stützstellen) für beide Koordinaten zurück
 !
-!> @author Andreas Hauffe, TU Dresden, wissenschaftlicher Mitarbeiter, 03.05.2017 
+!> @author Andreas Hauffe, TU Dresden, wissenschaftlicher Mitarbeiter, 03.05.2017
 !
 ! =================================================================================================
-    
+
     subroutine integration_points_2d(nPcoord1, intType1, coord1, wCoord1, &
                                      nPcoord2, intType2, coord2, wCoord2)
 
       implicit none
-      
+
       integer, intent(in)                                         :: nPcoord1           !< Anzahl der Integrationspunkte in Richtung der ersten Koordinate
       integer, intent(in)                                         :: nPcoord2           !< Anzahl der Integrationspunkte in Richtung der zweiten Koordinate
       character(len=5), intent(in)                                :: intType1           !< Integrationstype ("Gauss", "Simps") in Richtung der ersten Koordinate
       character(len=5), intent(in)                                :: intType2           !< Integrationstype ("Gauss", "Simps") in Richtung der zweiten Koordinate
-      
+
       double precision, dimension(nPcoord1*nPcoord2), intent(out) :: coord1             !< Relative Koordinaten der Integrationspunkte in Richtung der ersten Koordinate (-1,1)
       double precision, dimension(nPcoord1*nPcoord2), intent(out) :: coord2             !< Relative Koordinaten der Integrationspunkte in Richtung der zweiten Koordinate (-1,1)
       double precision, dimension(nPcoord1*nPcoord2), intent(out) :: wCoord1            !< Gewichte der Integrationspunkte in Richtung der ersten Koordinate
       double precision, dimension(nPcoord1*nPcoord2), intent(out) :: wCoord2            !< Gewichte der Integrationspunkte in Richtung der zweiten Koordinate
-      
+
       double precision, dimension(nPcoord1)                       :: coord1_t, wCoord1_t
       double precision, dimension(nPcoord2)                       :: coord2_t, wCoord2_t
-      
+
       integer                                                     :: index, i1, i2
-      
+
       if (intType1 .EQ. "Gauss") then
         call gauss_integration(nPcoord1, coord1_t, wCoord1_t)
       else if (intType1 .EQ. "Simps") then
@@ -2974,7 +2975,7 @@ module integration_schemes
         write(*,*) "No integration type found."
         STOP
       end if
-      
+
       if (intType2 .EQ. "Gauss") then
         call gauss_integration(nPcoord2, coord2_t, wCoord2_t)
       else if (intType2 .EQ. "Simps") then
@@ -2983,21 +2984,21 @@ module integration_schemes
         write(*,*) "No integration type found."
         STOP
       end if
-      
+
       index = 1
       do i2 = 1, nPcoord2
         do i1 = 1, nPcoord1
           coord1(index)  = coord1_t(i1)
           wCoord1(index) = wCoord1_t(i1)
-          
+
           coord2(index)  = coord2_t(i2)
           wCoord2(index) = wCoord2_t(i2)
           index = index + 1
         end do
       end do
-      
+
     end subroutine integration_points_2d
-    
+
 ! =================================================================================================
 !
 !> @brief
@@ -3005,39 +3006,39 @@ module integration_schemes
 !
 !> @details
 !> Gibt die Koordinaten der Stützenstellen und die dazugehörigen Gewichte
-!> für je eine Gauss- (1,2,3 Stützstellen) oder eine Simpson-Integration 
+!> für je eine Gauss- (1,2,3 Stützstellen) oder eine Simpson-Integration
 !> (1,3,5,7,9 Stützstellen) für alle drei Koordinaten zurück
 !
-!> @author Andreas Hauffe, TU Dresden, wissenschaftlicher Mitarbeiter, 03.05.2017 
+!> @author Andreas Hauffe, TU Dresden, wissenschaftlicher Mitarbeiter, 03.05.2017
 !
 ! =================================================================================================
-    
+
     subroutine integration_points_3d(nPcoord1, intType1, coord1, wCoord1, &
                                      nPcoord2, intType2, coord2, wCoord2, &
                                      nPcoord3, intType3, coord3, wCoord3)
-    
+
       implicit none
-      
+
       integer, intent(in)                                         :: nPcoord1 !> Anzahl der Integrationspunkte in Richtung der ersten Koordinate
       integer, intent(in)                                         :: nPcoord2 !> Anzahl der Integrationspunkte in Richtung der zweiten Koordinate
       integer, intent(in)                                         :: nPcoord3 !> Anzahl der Integrationspunkte in Richtung der dritten Koordinate
       character(len=5), intent(in)                                :: intType1 !> Integrationstype ("Gauss", "Simps") in Richtung der ersten Koordinate
       character(len=5), intent(in)                                :: intType2 !> Integrationstype ("Gauss", "Simps") in Richtung der zweiten Koordinate
       character(len=5), intent(in)                                :: intType3 !> Integrationstype ("Gauss", "Simps") in Richtung der dritten Koordinate
-      
+
       double precision, dimension(nPcoord1*nPcoord2*nPcoord3), intent(out) :: coord1 !> Relative Koordinate der Integrationspunkte in Richtung der ersten Koordinate (-1,1)
       double precision, dimension(nPcoord1*nPcoord2*nPcoord3), intent(out) :: coord2 !> Relative Koordinate der Integrationspunkte in Richtung der zweiten Koordinate (-1,1)
       double precision, dimension(nPcoord1*nPcoord2*nPcoord3), intent(out) :: coord3 !> Relative Koordinate der Integrationspunkte in Richtung der dritten Koordinate (-1,1)
       double precision, dimension(nPcoord1*nPcoord2*nPcoord3), intent(out) :: wCoord1 !> Gewichte der Integrationspunkte in Richtung der ersten Koordinate
       double precision, dimension(nPcoord1*nPcoord2*nPcoord3), intent(out) :: wCoord2 !> Gewichte der Integrationspunkte in Richtung der zweiten Koordinate
       double precision, dimension(nPcoord1*nPcoord2*nPcoord3), intent(out) :: wCoord3 !> Gewichte der Integrationspunkte in Richtung der dritten Koordinate
-      
+
       double precision, dimension(nPcoord1)                       :: coord1_t, wCoord1_t
       double precision, dimension(nPcoord2)                       :: coord2_t, wCoord2_t
       double precision, dimension(nPcoord3)                       :: coord3_t, wCoord3_t
-      
+
       integer                                                     :: index, i1, i2, i3
-      
+
       if (intType1 .EQ. "Gauss") then
         call gauss_integration(nPcoord1, coord1_t, wCoord1_t)
       else if (intType1 .EQ. "Simps") then
@@ -3046,7 +3047,7 @@ module integration_schemes
         write(*,*) "No integration type found."
         STOP
       end if
-      
+
       if (intType2 .EQ. "Gauss") then
         call gauss_integration(nPcoord2, coord2_t, wCoord2_t)
       else if (intType2 .EQ. "Simps") then
@@ -3055,7 +3056,7 @@ module integration_schemes
         write(*,*) "No integration type found."
         STOP
       end if
-      
+
       if (intType3 .EQ. "Gauss") then
         call gauss_integration(nPcoord3, coord3_t, wCoord3_t)
       else if (intType3 .EQ. "Simps") then
@@ -3064,26 +3065,26 @@ module integration_schemes
         write(*,*) "No integration type found."
         STOP
       end if
-      
+
       index = 1
       do i3 = 1, nPcoord3
         do i2 = 1, nPcoord2
           do i1 = 1, nPcoord1
             coord1(index)  = coord1_t(i1)
             wCoord1(index) = wCoord1_t(i1)
-            
+
             coord2(index)  = coord2_t(i2)
             wCoord2(index) = wCoord2_t(i2)
-            
+
             coord3(index)  = coord3_t(i3)
             wCoord3(index) = wCoord3_t(i3)
             index = index + 1
           end do
         end do
       end do
-      
+
     end subroutine integration_points_3d
-    
+
 ! =================================================================================================
 !
 !> @brief
@@ -3096,9 +3097,9 @@ module integration_schemes
 !> @author Andreas Hauffe, TU Dresden, wissenschaftlicher Mitarbeiter, 16.06.2010
 !
 ! =================================================================================================
-    
+
     subroutine gauss_integration(numPoints, coord, weight)
-    
+
     !
     ! use
     !
@@ -3120,7 +3121,7 @@ module integration_schemes
     !
     integer, intent(in)                                           :: numPoints
     integer                                                       :: err_code = 0
-    
+
     double precision                                              :: facDP
     double precision, dimension(numPoints*numPoints), intent(out) :: coord
     double precision, dimension(numPoints*numPoints), intent(out) :: weight
@@ -3136,66 +3137,66 @@ module integration_schemes
     ! Calculation
     !
     if (numPoints == 3) then
-        
+
         ! Build vectors with Gauß-point coordinates in xi and eta
-        
+
         facDP = sqrt(0.6D0)
-        
+
         coord(1) = -facDP
         coord(2) =  0.D0
         coord(3) =  facDP
-        
+
         ! Build vectors with Gauss-integration weights
-        
+
         weight(1) = 5.D0/9.D0
         weight(2) = 8.D0/9.D0
         weight(3) = weight(1)
-    
+
     else if (numPoints == 2) then
-        
+
         facDP = 1.D0/sqrt(3.D0)
-        
+
         coord(1) = -facDP
         coord(2) =  facDP
-        
+
         weight(1)  = 1.D0
         weight(2)  = weight(1)
-        
+
     else if (numPoints == 1) then
-        
+
         facDP      = 0.D0
-        
+
         coord(1)  = facDP
-        
+
         weight(1)    = 2.D0
-        
+
     else
-        
+
         write(*,*) 'wrong input on parameter numPoints'
         write(*,*) 'values 1, 2 or 3 are allowed to be chosen'
         err_code = 1
         goto 9999
-    
+
     end if
     !
     ! =================================================================================================
     !
     ! Error handling
-    !  
+    !
     9999 continue
 
     if (err_code /= 0) then
-    
+
         write(*,*)                      'An error occured in subroutine'
         write(*,*)                      'gauss_integration'
         write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
         write(*,*)                      'exit program '
         stop
-    
+
     end if
-    
+
     end subroutine gauss_integration
-    
+
 ! =================================================================================================
 !
 !> @brief
@@ -3205,10 +3206,10 @@ module integration_schemes
 !> Returns the coordinates of the integration points and the corredponding weights
 !> for the Simpson's integration rule for 9, 7, 5, 3 or 1 points
 !
-!> @author Florian Dexl, TU Dresden, wissenschaftlicher Mitarbeiter, ??.??.20?? 
+!> @author Florian Dexl, TU Dresden, wissenschaftlicher Mitarbeiter, ??.??.20??
 !
-! =================================================================================================  
-    
+! =================================================================================================
+
     subroutine simpson_integration(numPoints, coord, weight)
     !
     !
@@ -3230,7 +3231,7 @@ module integration_schemes
     ! Output
     !
     double precision, dimension(numPoints), intent(out)    :: coord     !< array containing coordinates of integration points
-    double precision, dimension(numPoints), intent(out)    :: weight    !< weights needed for integration 
+    double precision, dimension(numPoints), intent(out)    :: weight    !< weights needed for integration
     !
     ! Internal
     !
@@ -3243,20 +3244,20 @@ module integration_schemes
 
     ! Get through thickness integration points by Simpson's rule
     if (numPoints == 1) then
-    
+
         coord = 0.d0
-        
+
         weight   = 2.d0
-    
+
     else if (numPoints == 3) then
-        
+
         coord(1) = -1.d0
         coord(2) =  0.d0
         coord(3) =  1.d0
-        
+
         weight(1) = 1.d0/3.d0
         weight(2) = 4.d0/3.d0
-        weight(3) = 1.d0/3.d0 
+        weight(3) = 1.d0/3.d0
 
     else if (numPoints == 5) then
 
@@ -3265,7 +3266,7 @@ module integration_schemes
         coord(3) =  0.d0
         coord(4) =  0.5d0
         coord(5) =  1.d0
-        
+
         weight(1) = 1.d0/6.d0
         weight(2) = 4.d0/6.d0
         weight(3) = 2.d0/6.d0
@@ -3281,7 +3282,7 @@ module integration_schemes
         coord(5) =  1.d0/3.d0
         coord(6) =  2.d0/3.d0
         coord(7) =  1.d0
-        
+
         weight(1) = 1.d0/9.d0
         weight(2) = 4.d0/9.d0
         weight(3) = 2.d0/9.d0
@@ -3301,7 +3302,7 @@ module integration_schemes
         coord(7) =  2.d0/4.d0
         coord(8) =  3.d0/4.d0
         coord(9) =  1.d0
-        
+
         weight(1) = 1.d0/12.d0
         weight(2) = 4.d0/12.d0
         weight(3) = 2.d0/12.d0
@@ -3311,9 +3312,9 @@ module integration_schemes
         weight(7) = 2.d0/12.d0
         weight(8) = 4.d0/12.d0
         weight(9) = 1.d0/12.d0
-    
+
     else
-    
+
         write(*,*) 'wrong input on parameter numPoints (number of'
         write(*,*) 'integration points)'
         write(*,*) 'values 1, 3, 5, 7 or 9 are allowed to be chosen'
@@ -3330,19 +3331,37 @@ module integration_schemes
     9999 continue
     !
     if (err_code /= 0) then
-        !   
+        !
         write(*,*)                      'An error occured in subroutine'
         write(*,*)                      'simpson_integration'
         write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
         write(*,*)                      'exit program '
         stop
-        !   
+        !
     end if
     !
     return
     !
     end subroutine simpson_integration
-    
+
+! =================================================================================================
+!
+!> @brief
+!> Delivers 14 integration points for fully integrated brick elements
+!
+!> @details
+!> Delivers 14 integration points for fully integrated brick elements
+!> Not finished yet
+!
+!> @author Fabian Reisener, TU Dresden, wissenschaftlicher Mitarbeiter
+!
+! =================================================================================================
+    subroutine integration_points_brick14(coord1,wcoord1,coord2,wcoord2,coord3,wcoord3)
+        double precision, dimension(14), intent(out) :: coord1,coord2,coord3    !> Relative Koordinate der Integrationspunkte in Richtung der 1.,2.,3. Koordinate (-1,1)
+        double precision, dimension(14), intent(out) :: wcoord1,wcoord2,wcoord3 !> Gewichtung der Integrationspunkte in Richtung der 1.,2.,3. Koordinate
+
+
+    end subroutine
 end module integration_schemes
 
 ===== include/internals_typen.f90 =====
@@ -3351,9 +3370,9 @@ end module integration_schemes
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -3374,13 +3393,13 @@ end module integration_schemes
 module internals_typen
 
 implicit none
-  
+
 type internals_type
-  
+
   ! Hilfsgrößen, um Aufwand zu sparen
   integer                               :: dim_dof              ! Anzahl der tatsächlichen Freiheiten (ohne gesperrte)
   integer, dimension(:), allocatable    :: num_dof_vec
-  logical                               :: failed               ! Zusatzflag, wenn bereits etwas versagt ist, können damit nachfolgende Berechnungen abgeschaltet werden  
+  logical                               :: failed               ! Zusatzflag, wenn bereits etwas versagt ist, können damit nachfolgende Berechnungen abgeschaltet werden
   type(meshcoupling_type), dimension(:), allocatable :: aeroElem2structNode
   type(meshcoupling_type), dimension(:), allocatable :: structElem2aeroNode
   integer, dimension(:), allocatable    :: structQuad8IDs
@@ -3391,7 +3410,8 @@ type internals_type
   integer                               :: indexBeforeAeroLoad
   integer                               :: highestLID
   integer                               :: highestLIDtemp
-  
+  double precision,dimension(:,:),allocatable :: thermal_dof_map    ! Array für alle thermischen Randbedingung, Format: (NID,TYPE,VAL1,VAL2)
+
 end type internals_type
 
 type meshcoupling_type
@@ -3406,21 +3426,21 @@ end type meshcoupling_type
 contains
 
   subroutine bcast_internals(internals,num_dof)
-    
+
 #include "petsc/finclude/petscsys.h"
     use petscsys
-    
+
     implicit none
 
     PetscMPIInt     :: rank
     PetscErrorCode  :: ierr
     type(internals_type) :: internals
     INTEGER         :: num_dof
-    
+
 #if !defined (PETSC_HAVE_MPIUNI)
-    
+
     call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
-    
+
     call MPI_Bcast (internals%dim_dof    ,       1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     if (rank .ne. 0) then
         allocate ( internals%num_dof_vec(num_dof) )
@@ -3429,22 +3449,22 @@ contains
     call MPI_Bcast (internals%failed     ,       1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
 
 #endif
-    
+
   end subroutine bcast_internals
-  
+
   subroutine free_mem_internals(internals)
-  
+
     implicit none
-    
+
     type(internals_type) :: internals
-    
+
     if (allocated(internals%num_dof_vec) .eq. .true.) deallocate(internals%num_dof_vec)
     if (allocated(internals%aeroElem2structNode) .eq. .true.) deallocate(internals%aeroElem2structNode)
     if (allocated(internals%structElem2aeroNode) .eq. .true.) deallocate(internals%structElem2aeroNode)
     if (allocated(internals%structQuad8IDs) .eq. .true.) deallocate(internals%structQuad8IDs)
     if (allocated(internals%structBeam2IDs) .eq. .true.) deallocate(internals%structBeam2IDs)
     if (allocated(internals%aeroDispl) .eq. .true.) deallocate(internals%aeroDispl)
-  
+
   end subroutine free_mem_internals
 
 end module internals_typen
@@ -4246,52 +4266,6 @@ contains
   end subroutine free_mem_lasten
   
 end module last_typen
-
-===== include/Makefile =====
-# Makefile
-# erzeugt die Library für alle Module
-
-include ../makeconfig.mk
-
-PROGRAM := libmodule
-
-MODULE := \
- globale_variablen.o \
- eigenschaften_typen.o \
- element_typen.o \
- failurecriteria_typen.o \
- knoten_typen.o \
- koordinatensystem_typen.o \
- laminat_typen.o \
- last_typen.o \
- material_typen.o \
- randbedingung_typen.o \
- residual_typen.o \
- internals_typen.o \
- ausgabe_typen.o \
- ergebnis_typen.o \
- fesimulation_typen.o \
- pre_assemble_types.o \
- vtk_variablen.o \
- vec_func.o \
- dof_types.o \
- konstanten.o \
- mat_func.o \
- integration_schemes.o \
- failure_criteria.o
-
-###############################################################################
-## rules follow
-###############################################################################
-.PHONY: default clean
-
-all: $(PROGRAM)
-
-$(PROGRAM): $(MODULE)
-	ar rcs $(PROGRAM).a $(MODULE) 
-
-clean2: clean
-	$(RM) $(PROGRAM).a
 
 ===== include/material_typen.f90 =====
 !
@@ -5202,7 +5176,6 @@ end module residual_typen
 ! Steady thermal conduction and thermo-mechanical coupling
 !
 module thermal_typen
-
   implicit none
 
   type thermal_curve_type
@@ -5213,7 +5186,7 @@ module thermal_typen
 
   type thermal_material_type ! Temperaturunabhängiges thermisches Material
     integer :: mid = 0
-    double precision :: k
+    double precision :: k = 0.d0
   end type thermal_material_type
 
   type thermal_material_td_type ! Temperaturabhängig thermisches Material
@@ -5227,17 +5200,34 @@ module thermal_typen
   end type thermal_tbc_type
 
   type thermal_convection_bc_type
-    integer :: eid = 0              ! ID of element
-    integer :: face = 0             ! ID of element face
+    integer :: nid1 = 0              ! ID of nid1
+    integer :: nid2 = 0              ! ID of nid2
+    integer :: nid3 = 0              ! ID of nid3
+    integer :: nid4 = 0              ! ID of nid4
+    integer :: nid5 = 0              ! ID of nid5
+    integer :: nid6 = 0              ! ID of nid6
+    integer :: nid7 = 0              ! ID of nid7
+    integer :: nid8 = 0              ! ID of nid8
     double precision :: h = 0.d0    ! Film coefficient, q = Q/A = h * (T - T_amb)
     double precision :: T_amb = 0.d0    ! Ambient temperature at Face
   end type thermal_convection_bc_type
 
   type thermal_flux_bc_type
-    integer :: eid = 0              ! ID of element
-    integer :: face = 0             ! ID of element face
+    integer :: nid1 = 0              ! ID of nid1
+    integer :: nid2 = 0              ! ID of nid2
+    integer :: nid3 = 0              ! ID of nid3
+    integer :: nid4 = 0              ! ID of nid4
+    integer :: nid5 = 0              ! ID of nid5
+    integer :: nid6 = 0              ! ID of nid6
+    integer :: nid7 = 0              ! ID of nid7
+    integer :: nid8 = 0              ! ID of nid8
     double precision :: q = 0.d0    ! Heat flux across face
   end type thermal_flux_bc_type
+
+  type thermal_property_type
+    integer :: propid = 0   ! PropertyID
+    integer :: tmidid = 0   ! ThermalMaterialID
+  end type
 
   type thermal_state_type
     logical :: enabled = .false. ! Is thermal calculation supposed to be performed?
@@ -5256,6 +5246,7 @@ module thermal_typen
     type(thermal_tbc_type), allocatable :: tbcs(:)
     type(thermal_convection_bc_type), allocatable :: convections(:)
     type(thermal_flux_bc_type), allocatable :: fluxes(:)
+    type(thermal_property_type), allocatable :: propthermals(:)
   end type thermal_state_type
 
   !
@@ -5263,6 +5254,7 @@ module thermal_typen
   !
   logical :: thermal_mpi_type_inited = .false.
   integer :: mpi_thermal_material_type
+  integer :: mpi_thermal_material_td_type
   integer :: mpi_thermal_tbc_type
   integer :: mpi_thermal_convection_bc_type
   integer :: mpi_thermal_flux_bc_type
@@ -5415,150 +5407,185 @@ contains
     end do
   end subroutine thermal_get_material
 
-  subroutine thermal_free_state(state)
+ subroutine free_mem_thermal(state)
     type(thermal_state_type), intent(inout) :: state
     integer :: i
 
-    if (allocated(state%temperature)) deallocate(state%temperature)
+    if (allocated(state%temperature))     deallocate(state%temperature)
     if (allocated(state%temperature_old)) deallocate(state%temperature_old)
 
-    if (allocated(state%materials)) then
-      do i=1,size(state%materials)
-        if (allocated(state%materials(i)%k%T)) deallocate(state%materials(i)%k%T)
-        if (allocated(state%materials(i)%k%value)) deallocate(state%materials(i)%k%value)
-        if (allocated(state%materials(i)%E%T)) deallocate(state%materials(i)%E%T)
-        if (allocated(state%materials(i)%E%value)) deallocate(state%materials(i)%E%value)
-        if (allocated(state%materials(i)%nu%T)) deallocate(state%materials(i)%nu%T)
-        if (allocated(state%materials(i)%nu%value)) deallocate(state%materials(i)%nu%value)
-        if (allocated(state%materials(i)%alpha%T)) deallocate(state%materials(i)%alpha%T)
-        if (allocated(state%materials(i)%alpha%value)) deallocate(state%materials(i)%alpha%value)
+    ! Constant thermal materials: no allocatable components -> plain deallocate
+    if (allocated(state%materials)) deallocate(state%materials)
+
+    ! Temperature-dependent materials: curves have allocatable arrays
+    if (allocated(state%materials_td)) then
+      do i = 1, size(state%materials_td)
+        if (allocated(state%materials_td(i)%k%T))     deallocate(state%materials_td(i)%k%T)
+        if (allocated(state%materials_td(i)%k%value)) deallocate(state%materials_td(i)%k%value)
       end do
-      deallocate(state%materials)
+      deallocate(state%materials_td)
     end if
 
-    if (allocated(state%tbcs)) deallocate(state%tbcs)
-    if (allocated(state%convection)) deallocate(state%convection)
-    if (allocated(state%fluxes)) deallocate(state%fluxes)
-    if (allocated(state%heat_sources)) deallocate(state%heat_sources)
-  end subroutine thermal_free_state
+    if (allocated(state%tbcs))        deallocate(state%tbcs)
+    if (allocated(state%convections)) deallocate(state%convections)
+    if (allocated(state%fluxes))      deallocate(state%fluxes)
+end subroutine free_mem_thermal
 
   subroutine thermal_mpi_init()
 #include "petsc/finclude/petscsys.h"
 #if !defined (PETSC_HAVE_MPIUNI)
-    
+
       use petscsys
-    
-      implicit none
-    
-      INTEGER                             :: count, ii, ierror
-      INTEGER, dimension(:), allocatable  :: array_of_blockl, array_of_types
-      INTEGER(kind=MPI_ADDRESS_KIND), dimension(:), allocatable :: array_of_disp, address
-    
+
+      INTEGER                             :: count
+      INTEGER, dimension(:), allocatable  :: array_of_blockl
+      INTEGER, dimension(:), allocatable  :: array_of_types
+      INTEGER(kind=MPI_ADDRESS_KIND), dimension(:), allocatable   :: array_of_disp
+      INTEGER(kind=MPI_ADDRESS_KIND), dimension(:), allocatable   :: address
+
+      INTEGER                             :: ii
+      INTEGER                             :: ierror
+
       TYPE(thermal_material_type)      :: mat
+      TYPE(thermal_material_td_type)   :: mattd
       TYPE(thermal_tbc_type)           :: tbc
       TYPE(thermal_convection_bc_type) :: conv
       TYPE(thermal_flux_bc_type)       :: flux
-    
+
       !***************************************************************************
       ! thermal_material_type: mid, k
       !***************************************************************************
       count = 2
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-    
-      array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
+
+      array_of_types (1) = MPI_INTEGER
+      array_of_blockl(1) = 1
       CALL MPI_GET_ADDRESS(mat%mid, address(1), ierror)
-      array_of_types (2) = MPI_DOUBLE_PRECISION; array_of_blockl(2) = 1
+
+      array_of_types (2) = MPI_DOUBLE_PRECISION
+      array_of_blockl(2) = 1
       CALL MPI_GET_ADDRESS(mat%k, address(2), ierror)
-    
+
       array_of_disp(1) = 0
       DO ii = 2, count
         array_of_disp(ii) = address(ii) - address(1)
       END DO
-    
+
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_material_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_material_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-    
+
       !***************************************************************************
       ! thermal_tbc_type: nid, temperature
       !***************************************************************************
       count = 2
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-    
-      array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
+
+      array_of_types (1) = MPI_INTEGER
+      array_of_blockl(1) = 1
       CALL MPI_GET_ADDRESS(tbc%nid, address(1), ierror)
-      array_of_types (2) = MPI_DOUBLE_PRECISION; array_of_blockl(2) = 1
+
+      array_of_types (2) = MPI_DOUBLE_PRECISION
+      array_of_blockl(2) = 1
       CALL MPI_GET_ADDRESS(tbc%temperature, address(2), ierror)
-    
+
       array_of_disp(1) = 0
       DO ii = 2, count
         array_of_disp(ii) = address(ii) - address(1)
       END DO
-    
+
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_tbc_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_tbc_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-    
+
       !***************************************************************************
-      ! thermal_convection_bc_type: eid, face, h, T_amb
+      ! thermal_convection_bc_type: nid1, nid2, nid3, nid4, h, T_amb
       !***************************************************************************
-      count = 4
+      count = 6
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-    
-      array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
-      CALL MPI_GET_ADDRESS(conv%eid, address(1), ierror)
-      array_of_types (2) = MPI_INTEGER;          array_of_blockl(2) = 1
-      CALL MPI_GET_ADDRESS(conv%face, address(2), ierror)
-      array_of_types (3) = MPI_DOUBLE_PRECISION; array_of_blockl(3) = 1
-      CALL MPI_GET_ADDRESS(conv%h, address(3), ierror)
-      array_of_types (4) = MPI_DOUBLE_PRECISION; array_of_blockl(4) = 1
-      CALL MPI_GET_ADDRESS(conv%T_amb, address(4), ierror)
-    
+
+      array_of_types (1) = MPI_INTEGER
+      array_of_blockl(1) = 1
+      CALL MPI_GET_ADDRESS(conv%nid1, address(1), ierror)
+
+      array_of_types (2) = MPI_INTEGER
+      array_of_blockl(2) = 1
+      CALL MPI_GET_ADDRESS(conv%nid2, address(2), ierror)
+
+      array_of_types (3) = MPI_INTEGER
+      array_of_blockl(3) = 1
+      CALL MPI_GET_ADDRESS(conv%nid3, address(3), ierror)
+
+      array_of_types (4) = MPI_INTEGER
+      array_of_blockl(4) = 1
+      CALL MPI_GET_ADDRESS(conv%nid4, address(4), ierror)
+
+      array_of_types (5) = MPI_DOUBLE_PRECISION
+      array_of_blockl(5) = 1
+      CALL MPI_GET_ADDRESS(conv%h, address(5), ierror)
+
+      array_of_types (6) = MPI_DOUBLE_PRECISION
+      array_of_blockl(6) = 1
+      CALL MPI_GET_ADDRESS(conv%T_amb, address(6), ierror)
+
       array_of_disp(1) = 0
       DO ii = 2, count
         array_of_disp(ii) = address(ii) - address(1)
       END DO
-    
+
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_convection_bc_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_convection_bc_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-    
+
       !***************************************************************************
-      ! thermal_flux_bc_type: eid, face, q
+      ! thermal_flux_bc_type: nid1, nid2, nid3, nid4, q
       !***************************************************************************
-      count = 3
+      count = 5
       ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
       ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-    
-      array_of_types (1) = MPI_INTEGER;          array_of_blockl(1) = 1
-      CALL MPI_GET_ADDRESS(flux%eid, address(1), ierror)
-      array_of_types (2) = MPI_INTEGER;          array_of_blockl(2) = 1
-      CALL MPI_GET_ADDRESS(flux%face, address(2), ierror)
-      array_of_types (3) = MPI_DOUBLE_PRECISION; array_of_blockl(3) = 1
-      CALL MPI_GET_ADDRESS(flux%q, address(3), ierror)
-    
+
+      array_of_types (1) = MPI_INTEGER
+      array_of_blockl(1) = 1
+      CALL MPI_GET_ADDRESS(flux%nid1, address(1), ierror)
+
+      array_of_types (2) = MPI_INTEGER
+      array_of_blockl(2) = 1
+      CALL MPI_GET_ADDRESS(flux%nid2, address(2), ierror)
+
+      array_of_types (3) = MPI_INTEGER
+      array_of_blockl(3) = 1
+      CALL MPI_GET_ADDRESS(flux%nid3, address(3), ierror)
+
+      array_of_types (4) = MPI_INTEGER
+      array_of_blockl(4) = 1
+      CALL MPI_GET_ADDRESS(flux%nid4, address(4), ierror)
+
+      array_of_types (5) = MPI_DOUBLE_PRECISION
+      array_of_blockl(5) = 1
+      CALL MPI_GET_ADDRESS(flux%q, address(5), ierror)
+
       array_of_disp(1) = 0
       DO ii = 2, count
         array_of_disp(ii) = address(ii) - address(1)
       END DO
-    
+
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_flux_bc_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_flux_bc_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-    
+
     #endif
   end subroutine thermal_mpi_init
 
 
 
-    subroutine bcast_thermal(state,is_thermal,is_mat_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc)
+    subroutine bcast_thermal(state,is_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc)
 
 #include "petsc/finclude/petscsys.h"
     use petscsys
@@ -5566,7 +5593,7 @@ contains
     implicit none
 
     type(thermal_state_type), intent(inout) :: state
-    logical :: is_thermal,is_mat_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc
+    logical :: is_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc
 
     PetscMPIInt :: rank
     PetscErrorCode :: ierr
@@ -5619,19 +5646,6 @@ contains
         call MPI_Bcast(state%temperature    , n, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
         call MPI_Bcast(state%temperature_old, n, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
       end if
-    end if
-
-    ! ------------------------------------------------------------------
-    ! Constant thermal materials (custom MPI type)
-    ! ------------------------------------------------------------------
-    if (is_mat_thermal) then
-      if (rank .eq. 0) num = size(state%materials,1)
-      call MPI_Bcast(num, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
-      if (rank .ne. 0) then
-        if (allocated(state%materials)) deallocate(state%materials)
-        allocate(state%materials(num))
-      end if
-      call MPI_Bcast(state%materials, num, MPI_THERMAL_MATERIAL_TYPE, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     end if
 
     ! ------------------------------------------------------------------
@@ -5706,19 +5720,19 @@ contains
   function thermal_is_td(state) result(is_td)
     type(thermal_state_type), intent(in) :: state
     logical :: is_td
-    
+
     is_td = (allocated(state%materials_td) .and. size(state%materials_td) > 0)
-    
+
   end function thermal_is_td
 
   function thermal_is_conv(state) result(is_conv)
     type(thermal_state_type), intent(in) :: state
     logical :: is_conv
-    
+
     is_conv = (allocated(state%convections) .and. size(state%convections) > 0)
-    
+
   end function thermal_is_conv
-  
+
 
   end module thermal_typen
 
@@ -5872,9 +5886,9 @@ end module vtk_variablen
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -5964,7 +5978,7 @@ interface
         double precision, dimension(:), allocatable,   intent(out), optional  :: Mcrit             !< Kritische MACH-Zahl
         logical,                                       intent(in), optional   :: output            !< Flag, if PANEL2D should write any output
     end subroutine xfoilwrapper_main
-    
+
     subroutine load_add_aeropressure(fesim, scloop, pAeroElem, F_total_aero)
         use fesimulation_typen
         use konstanten
@@ -5983,7 +5997,7 @@ end interface
 
 !
 ! =================================================================================================
-! 
+!
 ! Data types
 !
 ! Input
@@ -6042,7 +6056,7 @@ if (aeroloadID .ne. 0) then
         write(*,*) 'Originalmodell'
         call apame_main(fname=filename,readmodel=.true.,pressures=pressures,F_total=F_total,cdi=cdi,output=fesim%ausgabe%outputVTK)
       end if
-      
+
       if (fesim%ausgabe%outputApamePressures .eq. .true.) then
         open (apamePressureOutFile, file = trim(filename) // '_pressure.res', status='UNKNOWN')
         write(apamePressureOutFile,'(E27.17)') F_total(1)
@@ -6098,7 +6112,7 @@ if (aeroloadID .ne. 0) then
       end if
     else if (fesim%lasten%aeroload2ds(aeroloadID)%mthd .eq. 2) then
       write(filename,'(A11,I4.4)') "panel2d_sc_", scloop
- 
+
       if (allocated(fesim%internals%aeroDispl) .eq. .true.) then
         call xfoilwrapper_main(fname=filename,readmodel=.false.,inviscid=.false.,displacements=fesim%internals%aeroDispl,pressures=pressures,F_total=F_total,paneling=.false.,cd=cdi,output=fesim%ausgabe%outputVTK)
       else
@@ -6107,7 +6121,7 @@ if (aeroloadID .ne. 0) then
       end if
     else if (fesim%lasten%aeroload2ds(aeroloadID)%mthd .eq. 3) then
       write(filename,'(A11,I4.4)') "panel2d_sc_", scloop
- 
+
       if (allocated(fesim%internals%aeroDispl) .eq. .true.) then
         call xfoilwrapper_main(fname=filename,readmodel=.false.,inviscid=.true.,displacements=fesim%internals%aeroDispl,pressures=pressures,F_total=F_total,paneling=.false.,cd=cdi,output=fesim%ausgabe%outputVTK)
       else
@@ -6151,7 +6165,7 @@ if (err_code /= 0) then
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return
@@ -6303,9 +6317,9 @@ end subroutine aeroload_prepare
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -6321,10 +6335,10 @@ end subroutine aeroload_prepare
 !> \file assemble_aa.f90
 ! =================================================================================================
 !
-!>  \brief      subroutine for assembling element stiffness matrix to aa-Part of the total 
+!>  \brief      subroutine for assembling element stiffness matrix to aa-Part of the total
 !>              system matrix
 !
-!>  \details    subroutine assembles element stiffness matrix of shell element to aa-Part 
+!>  \details    subroutine assembles element stiffness matrix of shell element to aa-Part
 !>              of the total system stiffness matrix
 !
 !>  \author     Martin Rädel, TU Dresden, Diplomarbeit  08.12.2009
@@ -6334,7 +6348,7 @@ end subroutine aeroload_prepare
 !> $Author: s1080304 $
 !> $Revision: 484 $
 !> $Date: 2024-10-18 16:28:29 +0200 (Fr, 18. Okt 2024) $
-!                       
+!
 !
 ! =================================================================================================
 
@@ -6396,18 +6410,21 @@ double precision, dimension(num_nodes_el*ndof,num_nodes_el*ndof)                
 !
   transNodeCoords = .false.
   do ii = 1,num_nodes_el
-    if (fesim%knoten%nodes(node_ids(ii))%cid .ne. 0) then
+    if (fesim%knoten%nodes(node_ids(ii))%cid .ne. 0) then ! check if any node has a custom Coordinate System
       transNodeCoords = .true.
       exit
     end if
   end do
-  
+
   if (transNodeCoords .eq. .true.) then
-    call nodalCoordSysTransMat(fesim,num_nodes_el,node_ids,transMat)
-    Kel = matmul(matmul(transpose(transMat),Kel),transMat)
+    call nodalCoordSysTransMat(fesim,num_nodes_el,node_ids,transMat)    ! if custom coordinate system,
+    Kel = matmul(matmul(transpose(transMat),Kel),transMat)              !  transform the element stiffness matrix to that coordinate system
   end if
 
-! Determine indizes
+! Determine whether the node part of spc or mpc by looking it up in the num_dof_vec
+! index>0 --> normal equation number
+! index=0 --> spc
+! index<0 --> mpc
 do ii = 1,num_nodes_el
   do jj = 1,ndof
     index((ii-1)*ndof+jj) = fesim%internals%num_dof_vec((node_ids(ii)-1)*ndof+jj)
@@ -6425,7 +6442,7 @@ do ii = 1,size(Kel,1)
       if (jjj .NE. 0) then
         ! if matrix entry is not equal zero
         if (Kel(ii,jj) .NE. 0.d0) then
-          ! if at least one dof is an dependend of an MPC 
+          ! if at least one dof is an dependend of an MPC
           if (iii .LT. 0 .OR. jjj .LT. 0) then
             ! if only the first dof is a dependend dof of an MPC
             if (iii .LT. 0 .AND. jjj .GT. 0) then
@@ -6490,13 +6507,13 @@ end do
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'assemble_aa'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return
@@ -10766,9 +10783,9 @@ end subroutine get_beam2_temperatures
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -10782,47 +10799,47 @@ end subroutine get_beam2_temperatures
 !  GNU General Public License for more details.
 !
 subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
-  
+
 #include "petsc/finclude/petscksp.h"
   use petscksp
 
   implicit none
-  
+
   Mat, intent(in)                               :: Kmat
   integer, intent(in)                           :: numDof
   logical, intent(in)                           :: check_zeros
-  
+
   Mat, intent(out)                              :: invKmat
-  
+
   Mat                                           :: tempKmat, KmatFak, Ident, invKmatDense, Kmat_ones
   IS                                            :: perm
   MatFactorInfo                                 :: matfacinfo(MAT_FACTORINFO_SIZE)
   PetscScalar                                   :: petScalar
-  integer, dimension(:), allocatable            :: d_nzz 
+  integer, dimension(:), allocatable            :: d_nzz
   integer                                       :: mm, nn, ncols
   integer, dimension(:), allocatable            :: cols
   double precision, dimension(:), allocatable   :: values
   PetscErrorCode                                :: ierr
-  
+
   Vec                                           :: invMatAsVec
   PetscScalar, pointer                          :: xx_v(:)
-  
+
   KSP                                           :: ksp
   PC                                            :: prec
-  
+
   Integer                                       :: ii, jj
   PetscInt                                      :: pii
   PetscScalar                                   :: v
-  
+
 !   integer, parameter                            :: fileunit = 83
 !   integer                                       :: entrycounter
 !   double precision                              :: val
-  
+
   if (check_zeros .eq. .true.) then
-  
+
     ! Erzeugen K einer Kopie von K
     WRITE(*,*) 'Erzeugen einer Kopie von K'
-    
+
     ! Bestimmen der Anzahl der Nichtnullelement in den Zeilen der Matrix
     allocate(d_nzz(numDof), cols(numDof), values(numDof))
     d_nzz = 0
@@ -10836,27 +10853,27 @@ subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
 
     ! Anlegen der Matrix
     WRITE(*,*) 'Anlegen der Matrix'
-    
+
     call MatCreate(PETSC_COMM_WORLD,tempKmat,ierr); CHKERRQ(ierr)
     call MatSetSizes(tempKmat,PETSC_DECIDE,PETSC_DECIDE,numDof,numDof,ierr); CHKERRQ(ierr)
     call MatSetType(tempKmat,MATMPIAIJ,ierr); CHKERRQ(ierr)
     call MatSetFromOptions(tempKmat,ierr); CHKERRQ(ierr)
     call MatSetUp(tempKmat,ierr); CHKERRQ(ierr)
     call MatMPIAIJSetPreallocation(tempKmat, 0, d_nzz, 0, PETSC_NULL_INTEGER_ARRAY, ierr); CHKERRQ(ierr)
-   
+
     d_nzz = 1
-     
+
     call MatCreate(PETSC_COMM_WORLD,Kmat_ones,ierr); CHKERRQ(ierr)
     call MatSetSizes(Kmat_ones,PETSC_DECIDE,PETSC_DECIDE,numDof,numDof,ierr); CHKERRQ(ierr)
     call MatSetType(Kmat_ones,MATMPIAIJ,ierr); CHKERRQ(ierr)
     call MatSetFromOptions(Kmat_ones,ierr); CHKERRQ(ierr)
     call MatSetUp(Kmat_ones,ierr); CHKERRQ(ierr)
     call MatMPIAIJSetPreallocation(Kmat_ones, 0, d_nzz, 0, PETSC_NULL_INTEGER_ARRAY, ierr); CHKERRQ(ierr)
-   
-   
+
+
     ! Setzen der Werte
     WRITE(*,*) 'Setzen der Werte'
-   
+
     do mm = 1, numDof
       call MatGetRow(Kmat, mm-1, ncols, cols, values, ierr); CHKERRQ(ierr)
       if (ncols .EQ. 0) then
@@ -10869,73 +10886,73 @@ subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
       end do
       call MatRestoreRow(Kmat, mm-1, ncols, cols, values, ierr); CHKERRQ(ierr)
     end do
-    
+
     deallocate(d_nzz, cols, values)
-   
+
     ! Assemblieren
     WRITE(*,*) 'Assemblieren'
-    
+
     call MatAssemblyBegin(tempKmat,MAT_FINAL_ASSEMBLY,ierr); CHKERRQ(ierr)
     call MatAssemblyEnd  (tempKmat,MAT_FINAL_ASSEMBLY,ierr); CHKERRQ(ierr)
-    
+
     call MatAssemblyBegin(Kmat_ones,MAT_FINAL_ASSEMBLY,ierr); CHKERRQ(ierr)
     call MatAssemblyEnd  (Kmat_ones,MAT_FINAL_ASSEMBLY,ierr); CHKERRQ(ierr)
-    
+
     call MatAXPY(tempKmat, 1.d0, Kmat_ones, DIFFERENT_NONZERO_PATTERN, ierr); CHKERRQ(ierr)
-    
-  else 
-  
+
+  else
+
     tempKmat = Kmat
-  
+
   end if
 
   ! Berechnen von inv(Kii)
   WRITE(*,*) 'Berechnen von inv(K)'
-  
+
   call KSPCreate(PETSC_COMM_WORLD,ksp,ierr); CHKERRQ(ierr)
   call KSPSetOperators(ksp,tempKmat,tempKmat,ierr); CHKERRQ(ierr)
-  
+
   call KSPSetType(ksp,KSPPREONLY,ierr); CHKERRQ(ierr)
   call KSPGetPC(ksp,prec,ierr); CHKERRQ(ierr)
   call PCSetType(prec,PCCHOLESKY,ierr); CHKERRQ(ierr)
   call PCFactorSetMatSolverType(prec,MATSOLVERMUMPS,ierr); CHKERRQ(ierr)
 
   call KSPSetFromOptions(ksp,ierr); CHKERRQ(ierr)
-  
+
   allocate(d_nzz(numDof))
-  
+
   d_nzz = 0
-  
+
 !   open(unit=fileunit, file='temp_inverse_entries.dat', status='unknown', action='write', form="unformatted")
 !   entrycounter = 0
-  
+
   do ii = 1, numDof
-  
+
     call VecCreate(PETSC_COMM_WORLD,invMatAsVec,ierr); CHKERRQ(ierr)
     call VecSetSizes(invMatAsVec,PETSC_DECIDE,numDof,ierr); CHKERRQ(ierr)
     call VecSetFromOptions(invMatAsVec,ierr); CHKERRQ(ierr)
-    
+
     v = 1.d0
     pii = ii-1
     call VecSetValue(invMatAsVec, pii, v, INSERT_VALUES, ierr); CHKERRQ(ierr)
-    
+
     call VecAssemblyBegin(invMatAsVec,ierr); CHKERRQ(ierr);
     call VecAssemblyEnd(invMatAsVec,ierr); CHKERRQ(ierr);
-      
+
     call KSPSolve(ksp,invMatAsVec,invMatAsVec,ierr); CHKERRQ(ierr)
-   
+
     call VecGetArrayF90(invMatAsVec,xx_v,ierr); CHKERRQ(ierr)
 
     do jj = 1, numDof
 
       if (xx_v(jj) .NE. 0.d0) then
-      
+
         d_nzz(jj) = d_nzz(jj) + 1
-        
+
 !         write(fileunit) ii, jj, xx_v(jj)
-!         
+!
 !         entrycounter = entrycounter + 1
-        
+
       end if
 
     end do
@@ -10946,7 +10963,7 @@ subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
     IF (MODULO(ii, 100) .EQ. 0) WRITE(*,*) 'DOF ', ii, ' von ', numDof, ' fertig'
 
   end do
-  
+
 !   close(fileunit)
 
   call MatCreate(PETSC_COMM_WORLD,invKmat,ierr); CHKERRQ(ierr)
@@ -10955,37 +10972,37 @@ subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
   call MatSetFromOptions(invKmat,ierr); CHKERRQ(ierr)
   call MatSetUp(invKmat,ierr); CHKERRQ(ierr)
   call MatMPIAIJSetPreallocation(invKmat, 0, d_nzz, 0, PETSC_NULL_INTEGER_ARRAY, ierr); CHKERRQ(ierr)
-  
+
   WRITE(*,*) 'Inverse bilden'
   WRITE(*,*) 'numDof ', numDof
-  
+
 !   open(unit=fileunit, file='temp_inverse_entries.dat', status='unknown', action='read', form="unformatted")
-!   
+!
 !   do mm = 1, entrycounter
-!   
+!
 !     read(fileunit) ii, jj, val
-!     
+!
 !     call MatSetValue(invKmat, jj-1, ii-1, val, ADD_VALUES, ierr); CHKERRQ(ierr)
-!   
+!
 !   end do
-!   
+!
 !   close(fileunit)
-  
+
   do ii = 1, numDof
-  
+
     call VecCreate(PETSC_COMM_WORLD,invMatAsVec,ierr); CHKERRQ(ierr)
     call VecSetSizes(invMatAsVec,PETSC_DECIDE,numDof,ierr); CHKERRQ(ierr)
     call VecSetFromOptions(invMatAsVec,ierr); CHKERRQ(ierr)
-    
+
     v = 1.d0
     pii = ii-1
     call VecSetValue(invMatAsVec, pii, v, INSERT_VALUES, ierr); CHKERRQ(ierr)
-    
+
     call VecAssemblyBegin(invMatAsVec,ierr); CHKERRQ(ierr);
     call VecAssemblyEnd(invMatAsVec,ierr); CHKERRQ(ierr);
-      
+
     call KSPSolve(ksp,invMatAsVec,invMatAsVec,ierr); CHKERRQ(ierr)
-   
+
     call VecGetArrayF90(invMatAsVec,xx_v,ierr); CHKERRQ(ierr)
 
     do jj = 1, numDof
@@ -11000,22 +11017,22 @@ subroutine get_inverse3(Kmat, numDof, invKmat, check_zeros)
     IF (MODULO(ii, 100) .EQ. 0) WRITE(*,*) 'DOF ', ii, ' von ', numDof, ' fertig'
 
   end do
-  
+
   call KSPDestroy(ksp,ierr); CHKERRQ(ierr)
 
   ! Assemblieren
   WRITE(*,*) 'Assemblieren'
-  
+
   call MatAssemblyBegin(invKmat,MAT_FINAL_ASSEMBLY,ierr); CHKERRQ(ierr)
   call MatAssemblyEnd  (invKmat,MAT_FINAL_ASSEMBLY,ierr); CHKERRQ(ierr)
-  
+
   if (check_zeros .eq. .true.) then
-  
+
     call MatAXPY(invKmat, -1.d0, Kmat_ones, DIFFERENT_NONZERO_PATTERN, ierr); CHKERRQ(ierr)
     call MatDestroy(Kmat_ones, ierr); CHKERRQ(ierr)
 
   end if
-  
+
 end subroutine get_inverse3
 
 ===== source/get_lsolid20_temperatures.f90 =====
@@ -14175,9 +14192,9 @@ end subroutine init_vectors
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -14264,35 +14281,35 @@ err_code = 0
 
 do while (jj <= len(line))
 !do jj=1,len(line)
-   
+
    ! avoid prefaced blanks in the beginning of a line
-   
+
    if ((begin_index == 0) .and. (line(jj:jj) /= ' ')) then
       begin_index = jj
    end if
-   
+
    ! start with first actual character thats not a blank
-   
+
    if (begin_index > 0) then
-      
+
      ! avoid blanks between words in one line and postpositioned blanks
-     
+
      if (line(jj:jj) == ' ') then
        end_index = jj - 1
      end if
-      
+
      if (jj == len(line)) then
        end_index = jj
      end if
-      
+
      ! word processing
-      
+
      if (end_index > 0) then
-      
+
        kk = kk + 1
        word = line(begin_index:end_index)
        array(kk) = word
-    
+
        do ll = 1,len(word)
          if (word(ll:ll) == '=') then
            flag = .true.
@@ -14300,11 +14317,11 @@ do while (jj <= len(line))
            exit
          end if
       end do
-    
+
       if (flag == .false.) then
-    
+
       ! check for Keywords
-    
+
         if (word == 'node') then
             fesim%is_node  = .true.
         else if (word == 'quad8') then
@@ -14381,8 +14398,6 @@ do while (jj <= len(line))
         !!!!!!!!!!! Thermal: Start
         else if (word == 'thermal') then
             fesim%is_thermal = .true.
-        else if (word == 'matthermal') then
-            fesim%is_mat_thermal = .true.
         else if (word == 'matthermaltd') then
             fesim%is_mat_thermal_td = .true.
         else if (word == 'tbc') then
@@ -14391,8 +14406,10 @@ do while (jj <= len(line))
             fesim%is_flux_bc = .true.
         else if (word == 'convectionbc') then
             fesim%is_convection_bc = .true.
+        else if (word == 'propthermal') then
+            fesim%is_prop_thermal = .true.
         !!!!!!!!!!! Thermal: End
-            
+
         else if (word == 'outputvtk') then
             fesim%ausgabe%outputVTK = .true.
         else if (word == 'outputuser') then
@@ -14426,9 +14443,9 @@ do while (jj <= len(line))
         else if (word == 'globalReactForce') then
             fesim%globalReactForce = .true.
         end if
-            
+
       else if (flag == .true.) then
-            
+
         if (varname == 'sol') then
             fesim%sol = CharToInt(word)
         else if (varname == 'numEigVal') then
@@ -14452,24 +14469,24 @@ do while (jj <= len(line))
         else if (varname == 'aeroDisplEps') then
             fesim%aeroDisplEps = CharToDou(word)
         end if
-            
+
       else
         write(*,*) 'Error processing flag'
         err_code=1
         goto 9999
       end if
-         
+
       ! re-initialize indices
       begin_index = 0
       end_index   = 0
-         
+
     end if
   end if
-   
+
   ! update index
-   
+
   jj = jj+1
-   
+
 end do
 
 !
@@ -14481,13 +14498,13 @@ end do
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'input_process_line'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return
@@ -14495,36 +14512,36 @@ return
 contains
 
  function CharToInt(word)
- 
+
    implicit none
-   
+
    character(50)               :: word          ! current word
    integer                     :: CharToInt
-   
+
    do ll=1,len(word)
      if (word(ll:ll) == '=') then
        READ(word((ll+1):len(word)),'(I)') CharToInt
      end if
    end do
- 
+
  end function CharToInt
 
  function CharToDou(word)
- 
+
    implicit none
-   
+
    character(50)               :: word          ! current word
    double precision            :: CharToDou
-   
+
    do ll=1,len(word)
      if (word(ll:ll) == '=') then
        READ(word((ll+1):len(word)),'(F)') CharToDou
      end if
    end do
- 
+
  end function CharToDou
- 
- 
+
+
 end subroutine input_process_line
 
 ===== source/input_tf.f90 =====
@@ -14533,9 +14550,9 @@ end subroutine input_process_line
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -14579,27 +14596,27 @@ implicit none
 
 !
 ! =================================================================================================
-! 
+!
 ! Data types
 !
 ! Input
-! 
-! 
+!
+!
 ! Output
-! 
+!
 !
 ! Input+Output
 !
 type(fe_simulation)     :: fesim
-! 
+!
 ! Inner
-! 
+!
 integer, parameter      :: n=255                            ! maximum number of words
 character(50)           :: fname, line, control_array(n)    ! filename with maximum length of (XX) characters
 integer                 :: io_error, read_error             ! Error-handling parameters
 integer                 :: rowcount
 integer                 :: nr_lines, nr_words               ! Steuer-Datei Parameter
-integer                 :: ii,jj
+integer                 :: ii,jj,nn,ll,mm
 integer                 :: elcount                          ! Counts overall element number
 integer                 :: err_code=0
 character(3)            :: angleType
@@ -15554,7 +15571,7 @@ if (fesim%is_failure /= .false.) then
                         goto 9999
                     end if
                 end do
-                
+
                 if (count_tresca .gt. 0) allocate(fesim%versagenskriterien%failTrescas(1:count_tresca))
                 if (count_mises .gt. 0) allocate(fesim%versagenskriterien%failMises(1:count_mises))
                 if (count_maxpstress .gt. 0) allocate(fesim%versagenskriterien%failMaxprincstresses(1:count_maxpstress))
@@ -15567,7 +15584,7 @@ if (fesim%is_failure /= .false.) then
                 if (count_maxstrain3d .gt. 0) allocate(fesim%versagenskriterien%failMaxStrain3Ds(1:count_maxstrain3d))
                 if (count_tsaiwu3d .gt. 0) allocate(fesim%versagenskriterien%failTsaiWu3Ds(1:count_tsaiwu3d))
                 rewind(38)
-                read (38,*) 
+                read (38,*)
                 count_tresca = 0
                 count_mises = 0
                 count_maxpstress = 0
@@ -15589,54 +15606,54 @@ if (fesim%is_failure /= .false.) then
                     end if
                     read (line_long,'(10X,A10)',iostat=read_error) failureType
                     if (TRIM(ADJUSTL(failureType)) == "tresca") then
-                    
+
                         count_tresca = count_tresca + 1
                         read (line_long,'(I10,10x,1E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failTrescas(count_tresca)%fid,fesim%versagenskriterien%failTrescas(count_tresca)%ys
-                          
+
                     else if (TRIM(ADJUSTL(failureType)) == "mises") then
-                    
+
                         count_mises = count_mises + 1
                         read (line_long,'(I10,10x,1E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failMises(count_mises)%fid,fesim%versagenskriterien%failMises(count_mises)%ys
-                          
+
                     else if (TRIM(ADJUSTL(failureType)) == "maxpstress") then
-                    
+
                         count_maxpstress = count_maxpstress + 1
                         read (line_long,'(I10,10x,2E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failMaxprincstresses(count_maxpstress)%fid,fesim%versagenskriterien%failMaxprincstresses(count_maxpstress)%ys,fesim%versagenskriterien%failMaxprincstresses(count_maxpstress)%ysC
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "puck") then
-                    
+
                         count_puck = count_puck + 1
                         read (line_long,'(I10,10x,9E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failPucks(count_puck)%fid,fesim%versagenskriterien%failPucks(count_puck)%RParTen,fesim%versagenskriterien%failPucks(count_puck)%RParCom, &
                           & fesim%versagenskriterien%failPucks(count_puck)%RNorTen,fesim%versagenskriterien%failPucks(count_puck)%RNorCom,fesim%versagenskriterien%failPucks(count_puck)%RShear, &
                           & fesim%versagenskriterien%failPucks(count_puck)%Pspd,fesim%versagenskriterien%failPucks(count_puck)%Pspz,fesim%versagenskriterien%failPucks(count_puck)%a0, &
                           & fesim%versagenskriterien%failPucks(count_puck)%lambdamin
-                          
+
                     else if (TRIM(ADJUSTL(failureType)) == "hill") then
-                    
+
                         count_hill = count_hill + 1
                         read (line_long,'(I10,10x,6E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failHills(count_hill)%fid,fesim%versagenskriterien%failHills(count_hill)%RParTen,fesim%versagenskriterien%failHills(count_hill)%RParCom, &
                           & fesim%versagenskriterien%failHills(count_hill)%RNorTen,fesim%versagenskriterien%failHills(count_hill)%RNorCom,fesim%versagenskriterien%failHills(count_hill)%RShear, &
                           & fesim%versagenskriterien%failHills(count_hill)%F12star
-                          
+
                     else if (TRIM(ADJUSTL(failureType)) == "norris") then
-                    
+
                         count_norris = count_norris + 1
                         read (line_long,'(I10,10x,3E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failNorris(count_norris)%fid,fesim%versagenskriterien%failNorris(count_norris)%RPar, &
                           & fesim%versagenskriterien%failNorris(count_norris)%RNor, &
                           & fesim%versagenskriterien%failNorris(count_norris)%RShear
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "fibre") then
-                    
+
                         count_fibre = count_fibre + 1
                         read (line_long,'(I10,10x,2E23.16)',iostat=read_error)  &
                           & fesim%versagenskriterien%failFibres(count_fibre)%fid,fesim%versagenskriterien%failFibres(count_fibre)%RParTen,fesim%versagenskriterien%failFibres(count_fibre)%RParCom
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "maxstrain") then
 
                         count_maxstrain = count_maxstrain + 1
@@ -15645,15 +15662,15 @@ if (fesim%is_failure /= .false.) then
                           & fesim%versagenskriterien%failMaxStrains(count_maxstrain)%epsParCom, fesim%versagenskriterien%failMaxStrains(count_maxstrain)%epsNorTen, &
                           & fesim%versagenskriterien%failMaxStrains(count_maxstrain)%epsNorCom,fesim%versagenskriterien%failMaxStrains(count_maxstrain)%epsShear, &
                           & fesim%versagenskriterien%failMaxStrains(count_maxstrain)%useGlobal
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "cuntze") then
-                    
+
                         count_cuntze = count_cuntze + 1
                         read (line_long,'(I10,10x,9E23.16)',iostat=read_error)  &
                         & fesim%versagenskriterien%failCuntzes(count_cuntze)%fid,fesim%versagenskriterien%failCuntzes(count_cuntze)%RParTen,fesim%versagenskriterien%failCuntzes(count_cuntze)%RParCom, &
                         & fesim%versagenskriterien%failCuntzes(count_cuntze)%RNorTen,fesim%versagenskriterien%failCuntzes(count_cuntze)%RNorCom,fesim%versagenskriterien%failCuntzes(count_cuntze)%RShear, &
                         & fesim%versagenskriterien%failCuntzes(count_cuntze)%muNorPar,fesim%versagenskriterien%failCuntzes(count_cuntze)%m
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "maxstrain3") then
 
                         count_maxstrain3d = count_maxstrain3d + 1
@@ -15666,9 +15683,9 @@ if (fesim%is_failure /= .false.) then
                         & fesim%versagenskriterien%failMaxStrain3Ds(count_maxstrain3d)%eps13Shear, &
                         & fesim%versagenskriterien%failMaxStrain3Ds(count_maxstrain3d)%eps23Shear, &
                         & fesim%versagenskriterien%failMaxStrain3Ds(count_maxstrain3d)%useGlobal
-                    
+
                     else if (TRIM(ADJUSTL(failureType)) == "tsaiwu3d") then
-                    
+
                         count_tsaiwu3d = count_tsaiwu3d + 1
                         read(line_long,'(I10,10x,12E23.16)',iostat=read_error)   &
                         & fesim%versagenskriterien%failTsaiWu3Ds(count_tsaiwu3d)%fid, &
@@ -15996,7 +16013,7 @@ if (fesim%is_subcase /= .false.) then
                 end if
                 allocate(fesim%lasten%subcases(1:rowcount))
                 do ii=1,rowcount
-                
+
                         read (35,'(4I10,5L1)',iostat=read_error) fesim%lasten%subcases(ii)%scid, fesim%lasten%subcases(ii)%spcaddid, fesim%lasten%subcases(ii)%loadid, fesim%lasten%subcases(ii)%mpcaddid, &
                                                                    & fesim%lasten%subcases(ii)%skipBuckling, fesim%lasten%subcases(ii)%upgeom, fesim%lasten%subcases(ii)%upstress, &
                                                                    & fesim%lasten%subcases(ii)%output, fesim%lasten%subcases(ii)%readApameInput
@@ -16432,99 +16449,21 @@ if (fesim%is_thermal) then
             goto 9999
         end if
 
-        allocate(fesim%thermal)
-        
-        ! Declare variables for keyword
-        character(80)        :: line_thermal
-        integer              :: i_enabled, i_coupled, i_theronly, i_maxiter
-        double precision     :: ctol, tref
-
+!        allocate(fesim%thermal)
 
         ! Read the keyword line: 6 values, max. 10 characters each
-        read (37,'(A)',iostat=read_error) line_thermal
+        read (37,'(3L10,1I10,2E23.16)',iostat=read_error) &
+            & fesim%thermal%enabled, &
+            & fesim%thermal%coupled_to_structure, &
+            & fesim%thermal%thermal_only, &
+            & fesim%thermal%max_iterations, &
+            & fesim%thermal%tolerance, &
+            & fesim%thermal%tref
         if (read_error /= 0) then
             write(*,*) 'Error reading file ', fname
             write(*,*) 'There was an error processing line 1'
             err_code=1
             goto 9999
-        end if
-
-         ! 1: enabled (default 0)
-        if (len_trim(line_thermal( 1:10)) == 0) then
-            i_enabled = 0
-        else
-            read (line_thermal( 1:10),*,iostat=read_error) i_enabled
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for enabled in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 2: coupled (default 0)
-        if (len_trim(line_thermal(11:20)) == 0) then
-            i_coupled = 0
-        else
-            read (line_thermal(11:20),*,iostat=read_error) i_coupled
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for coupled in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 3: theronly (default 0)
-        if (len_trim(line_thermal(21:30)) == 0) then
-            i_theronly = 0
-        else
-            read (line_thermal(21:30),*,iostat=read_error) i_theronly
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for theronly in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 4: maxiter (default from type)
-        if (len_trim(line_thermal(31:40)) == 0) then
-            i_maxiter = fesim%thermal%max_iterations
-        else
-            read (line_thermal(31:40),*,iostat=read_error) i_maxiter
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for maxiter in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 5: ctol (default from type)
-        if (len_trim(line_thermal(41:50)) == 0) then
-            ctol = fesim%thermal%tolerance
-        else
-            read (line_thermal(41:50),*,iostat=read_error) ctol
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for ctol in line 1'
-                err_code=1
-                goto 9999
-            end if
-        end if
-
-        ! 6: Tref (default from type)
-        if (len_trim(line_thermal(51:60)) == 0) then
-            tref = fesim%thermal%tref
-        else
-            read (line_thermal(51:60),*,iostat=read_error) tref
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for Tref in line 1'
-                err_code=1
-                goto 9999
-            end if
         end if
 
         close (37, iostat=io_error)
@@ -16533,15 +16472,6 @@ if (fesim%is_thermal) then
             err_code=1
             goto 9999
         end if
-
-        ! Assign values
-        fesim%thermal%enabled              = (i_enabled  == 1)
-        fesim%thermal%coupled_to_structure = (i_coupled  == 1)
-        fesim%thermal%thermal_only         = (i_theronly == 1)
-        fesim%thermal%max_iterations       = i_maxiter
-        fesim%thermal%tolerance            = ctol
-        fesim%thermal%tref                 = tref
-
     else
         write (*,*) 'Error opening file ', fname
         err_code=1
@@ -16550,84 +16480,7 @@ if (fesim%is_thermal) then
     ! Hier noch die ganzen thermal_type-Variablen auslesen
 end if
 
-if (fesim%is_mat_thermal) then
-    fname = 'matthermal.fipps'
-    open (unit=39,file=fname,status='old',action='read', iostat=io_error)
-    if (io_error == 0) then
-        read (39,*,iostat=read_error) rowcount
-        if (read_error /= 0) then
-            write(*,*) 'Error reading file ', fname
-            write(*,*) 'There was a problem reading the number of rows of the file'
-            err_code=1
-            goto 9999
-        end if
-        if (rowcount < 1) then
-            write(*,*) 'Error reading file ', fname
-            write(*,*) 'At least one thermal material must be defined'
-            err_code=1
-            goto 9999
-        end if
-        allocate(fesim%thermal%materials(1:rowcount))
-        ! set defaults (k has no default in the type definition)
-        do ii=1,rowcount
-            fesim%thermal%materials(ii)%mid = 0
-            fesim%thermal%materials(ii)%k   = 0.d0
-        end do
-        ! read values
-        do ii=1,rowcount
-            read (39,'(I10,E10.8)',iostat=read_error) fesim%thermal%materials(ii)%mid, fesim%thermal%materials(ii)%k
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error processing line', ii
-                err_code=1
-                goto 9999
-            end if
-        end do
-        close (39, iostat=io_error)
-        if (io_error /= 0) then
-            write(*,*) 'Error closing file ', fname
-            err_code=1
-            goto 9999
-        end if
-
-        ! Validation
-        do ii=1,rowcount
-            if (fesim%thermal%materials(ii)%mid < 2) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'TMID must be larger than 1 in line', ii
-                err_code=1
-                goto 9999
-            end if
-            if (fesim%thermal%materials(ii)%k <= 0.d0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Conductivity k must be positive in line', ii
-                err_code=1
-                goto 9999
-            end if
-        end do
-
-        ! Check for duplicate TMIDs
-        do ii=1,rowcount
-            do jj=ii+1,rowcount
-                if (fesim%thermal%materials(ii)%mid == fesim%thermal%materials(jj)%mid) then
-                    write(*,*) 'Error reading file ', fname
-                    write(*,*) 'Duplicate TMID defined: ', fesim%thermal%materials(ii)%mid
-                    err_code=1
-                    goto 9999
-                end if
-            end do
-        end do
-    else
-        write (*,*) 'Error opening file ', fname
-        err_code=1
-        goto 9999
-    end if
-end if
-
 if (fesim%is_mat_thermal_td) then
-    character(80)       :: line_td          
-    double precision    :: tvals(8), kvals(8)
-    integer             :: npts, npts_k
     fname = 'matthermaltd.fipps'
     open (unit=40,file=fname,status='old',action='read', iostat=io_error)
     if (io_error == 0) then
@@ -16638,81 +16491,81 @@ if (fesim%is_mat_thermal_td) then
             err_code=1
             goto 9999
         end if
-        if (rowcount < 1) then
+        if (rowcount < 4) then
             write(*,*) 'Error reading file ', fname
-            write(*,*) 'At least one temperature-dependent thermal material must be defined'
+            write(*,*) 'At least one temperature-dependent thermal material must be defined. ',fname,' only contains ',rowcount,' lines!'
             err_code=1
             goto 9999
         end if
-        allocate(fesim%thermal%materials_td(1:rowcount))
 
-        ! read values: 3 lines per material
-        do ii=1,rowcount
-            
+        ! read values: 3 lines per material,
+        nn = (rowcount-1)/3
+        allocate(fesim%thermal%materials_td(1:nn))
+        do ii=1,nn
+
             ! ---- line 1: TMID_TD (I10) ----
             read (40,'(I10)',iostat=read_error) fesim%thermal%materials_td(ii)%mid
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error reading TMID_TD of material', ii
+                write(*,*) 'There was an error reading TMID of TD_material in line', ii
                 err_code=1
                 goto 9999
             end if
 
             ! ---- line 2: temperatures T1..T8 (8 x 10 characters) ----
-            read (40,'(A)',iostat=read_error) line_td
+            read (40,'(A)',iostat=read_error) line_long
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error reading the temperature line of material', ii
+                write(*,*) 'There was an error reading the mat_td keyword', ii
+                write(*,*) 'When getting the temperature line'
                 err_code=1
                 goto 9999
             end if
-            npts = 0
-            do jj=1,8
-                if (len_trim(line_td((jj-1)*10+1:jj*10)) == 0) cycle
-                npts = npts + 1
-                read (line_td((jj-1)*10+1:jj*10),*,iostat=read_error) tvals(npts)
+
+            mm = len_trim(line_long)/23
+            allocate(fesim%thermal%materials_td(ii)%k%T(mm))
+            fesim%thermal%materials_td(ii)%k%n = mm
+            do ll=1,mm
+                read (line_long((ll-1)*23+1 : ll*23), '(E23.16)', iostat=read_error) fesim%thermal%materials_td(ii)%k%T(ll)
                 if (read_error /= 0) then
                     write(*,*) 'Error reading file ', fname
-                    write(*,*) 'Invalid temperature value', jj, 'of material', ii
+                    write(*,*) 'There was an error reading the mat_td keyword', ii
+                    write(*,*) 'When processing value', ll, 'of the conductivity line.'
                     err_code=1
                     goto 9999
                 end if
             end do
 
             ! ---- line 3: conductivities k1..k8 (8 x 10 characters) ----
-            read (40,'(A)',iostat=read_error) line_td
+            read (40,'(A)',iostat=read_error) line_long
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error reading the conductivity line of material', ii
+                write(*,*) 'There was an error reading the mat_td keyword', ii
+                write(*,*) 'When getting the tmid'
                 err_code=1
                 goto 9999
             end if
-            npts_k = 0
-            do jj=1,8
-                if (len_trim(line_td((jj-1)*10+1:jj*10)) == 0) cycle
-                npts_k = npts_k + 1
-                read (line_td((jj-1)*10+1:jj*10),*,iostat=read_error) kvals(npts_k)
+
+            mm = len_trim(line_long)/23
+            if (mm/=fesim%thermal%materials_td(ii)%k%n) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error reading the mat_td keyword', ii
+                write(*,*) mm,' values in conductivity line does not match ', nn, 'values in temperature line'
+                err_code=1
+                goto 9999
+            end if
+
+            allocate(fesim%thermal%materials_td(ii)%k%value(mm))
+            do ll=1,mm
+                read (line_long((ll-1)*23+1 : ll*23), '(E23.16)', iostat=read_error) fesim%thermal%materials_td(ii)%k%value(ll)
                 if (read_error /= 0) then
                     write(*,*) 'Error reading file ', fname
-                    write(*,*) 'Invalid conductivity value', jj, 'of material', ii
+                    write(*,*) 'There was an error reading the mat_td keyword', ii
+                    write(*,*) 'When processing value', ll, 'of the conductivity line.'
                     err_code=1
                     goto 9999
                 end if
             end do
-
-            ! T- and k-lines must contain the same number of values
-            if (npts /= npts_k) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Number of temperatures and conductivities differ for material', ii
-                err_code=1
-                goto 9999
-            end if
-
-            ! fill the curve (thermal_curve_add sorts by temperature)
-            do jj=1,npts
-                call thermal_curve_add(fesim%thermal%materials_td(ii)%k, tvals(jj), kvals(jj))
-            end do
-
         end do
         close (40, iostat=io_error)
         if (io_error /= 0) then
@@ -16722,11 +16575,11 @@ if (fesim%is_mat_thermal_td) then
         end if
 
         ! ---------------- Validation (unchanged) ----------------
-        do ii=1,rowcount
+        do ii=1,nn
 
-            if (fesim%thermal%materials_td(ii)%mid < 2) then
+            if (fesim%thermal%materials_td(ii)%mid < 1) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'TMID_TD must be larger than 1 for material', ii
+                write(*,*) 'TMID_TD must be larger than 0 for material', ii
                 err_code=1
                 goto 9999
             end if
@@ -16759,7 +16612,7 @@ if (fesim%is_mat_thermal_td) then
 
             ! duplicate TMID_TD within temperature-dependent materials
             do jj=ii+1,rowcount
-                if (fesim%thermal%materials_td(ii)%mid == fesim%thermal_materials_td(jj)%mid) then
+                if (fesim%thermal%materials_td(ii)%mid == fesim%thermal%materials_td(jj)%mid) then
                     write(*,*) 'Error reading file ', fname
                     write(*,*) 'Duplicate TMID_TD defined: ', fesim%thermal%materials_td(ii)%mid
                     err_code=1
@@ -16793,8 +16646,6 @@ if (fesim%is_mat_thermal_td) then
 end if
 
 if (fesim%is_tbc) then
-    integer          :: nid_tbc
-    double precision :: tbc_temp
     fname = 'tbc.fipps'
     open (unit=37,file=fname,status='old',action='read', iostat=io_error)
     if (io_error == 0) then
@@ -16814,34 +16665,13 @@ if (fesim%is_tbc) then
         allocate(fesim%thermal%tbcs(1:rowcount))
 
         do ii=1,rowcount
-            read (37,'(A)',iostat=read_error) line_thermal
+            read (37,'(I10,E23.16)',iostat=read_error) fesim%thermal%tbcs(ii)%nid, fesim%thermal%tbcs(ii)%temperature
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'There was an error processing line', ii
                 err_code=1
                 goto 9999
             end if
-
-            ! 1: NID (max. 10 characters)
-            read (line_thermal( 1:10),*,iostat=read_error) nid_tbc
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for NID in line', ii
-                err_code=1
-                goto 9999
-            end if
-
-            ! 2: T (max. 10 characters, exponent format possible)
-            read (line_thermal(11:20),*,iostat=read_error) tbc_temp
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for T in line', ii
-                err_code=1
-                goto 9999
-            end if
-
-            fesim%thermal%tbcs(ii)%nid         = nid_tbc
-            fesim%thermal%tbcs(ii)%temperature = tbc_temp
         end do
 
         close (37, iostat=io_error)
@@ -16904,7 +16734,17 @@ if (fesim%is_convection_bc) then
         allocate(fesim%thermal%convections(1:rowcount))
 
         do ii = 1, rowcount
-            read (39,'(A)',iostat=read_error) line_conv
+            read (39,'(8I10,2E23.16)',iostat=read_error) &
+                & fesim%thermal%convections(ii)%nid1, &
+                & fesim%thermal%convections(ii)%nid2, &
+                & fesim%thermal%convections(ii)%nid3, &
+                & fesim%thermal%convections(ii)%nid4, &
+                & fesim%thermal%convections(ii)%nid5, &
+                & fesim%thermal%convections(ii)%nid6, &
+                & fesim%thermal%convections(ii)%nid7, &
+                & fesim%thermal%convections(ii)%nid8, &
+                & fesim%thermal%convections(ii)%h, &
+                & fesim%thermal%convections(ii)%T_amb
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'There was an error processing line', ii
@@ -16913,92 +16753,19 @@ if (fesim%is_convection_bc) then
                 goto 9999
             end if
 
-            ! 1: EID (Element-ID), columns 1-10
-            if (len_trim(line_conv(1:10)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank EID field in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-            read (line_conv(1:10),*,iostat=read_error) eid
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for EID in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 2: FID (Face-ID), columns 11-20
-            if (len_trim(line_conv(11:20)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank FID field in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-            read (line_conv(11:20),*,iostat=read_error) face
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for FID in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 3: h (film coefficient), columns 21-30
-            if (len_trim(line_conv(21:30)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank h field in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-            read (line_conv(21:30),*,iostat=read_error) h
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for h in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 4: Tamb (ambient temperature), columns 31-40
-            if (len_trim(line_conv(31:40)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank Tamb field in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
-            read (line_conv(31:40),*,iostat=read_error) T_amb
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for Tamb in line ', ii
-                close(39)
-                err_code=1
-                goto 9999
-            end if
 
             ! TODO: Validate that eid exists in the element table here
             ! TODO: Validate that face is a valid face number for the
             !       corresponding element type here (e.g. 1-6 for lsolid20)
 
             ! Validation: film coefficient must not be negative
-            if (h < 0.d0) then
+            if (fesim%thermal%convections(ii)%h < 0.d0) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'Film coefficient h must not be negative in line ', ii
                 close(39)
                 err_code=1
                 goto 9999
             end if
-
-            ! Assign values
-            fesim%thermal%convections(ii)%eid   = eid
-            fesim%thermal%convections(ii)%face  = face
-            fesim%thermal%convections(ii)%h     = h
-            fesim%thermal%convections(ii)%T_amb = T_amb
         end do
 
         close (39, iostat=io_error)
@@ -17036,62 +16803,20 @@ if (fesim%is_flux_bc) then
 
         allocate(fesim%thermal%fluxes(1:rowcount))
 
-        do ii_flux = 1, rowcount
-            read (40,'(A)',iostat=read_error) line_flux
+        do ii = 1, rowcount
+            read (40,'(8I10,E23.16)',iostat=read_error) &
+                & fesim%thermal%fluxes(ii)%nid1, &
+                & fesim%thermal%fluxes(ii)%nid2, &
+                & fesim%thermal%fluxes(ii)%nid3, &
+                & fesim%thermal%fluxes(ii)%nid4, &
+                & fesim%thermal%fluxes(ii)%nid5, &
+                & fesim%thermal%fluxes(ii)%nid6, &
+                & fesim%thermal%fluxes(ii)%nid7, &
+                & fesim%thermal%fluxes(ii)%nid8, &
+                & fesim%thermal%fluxes(ii)%q
             if (read_error /= 0) then
                 write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error processing line', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 1: EID (Element-ID), columns 1-10
-            if (len_trim(line_flux(1:10)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank EID field in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-            read (line_flux(1:10),*,iostat=read_error) eid
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for EID in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 2: FID (Face-ID), columns 11-20
-            if (len_trim(line_flux(11:20)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank FID field in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-            read (line_flux(11:20),*,iostat=read_error) face
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for FID in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-
-            ! 3: q (heat flux), columns 21-30
-            if (len_trim(line_flux(21:30)) == 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Blank q field in line ', ii_flux
-                close(40)
-                err_code=1
-                goto 9999
-            end if
-            read (line_flux(21:30),*,iostat=read_error) q
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Invalid value for q in line ', ii_flux
+                write(*,*) 'There was an error processing line', ii
                 close(40)
                 err_code=1
                 goto 9999
@@ -17100,11 +16825,6 @@ if (fesim%is_flux_bc) then
             ! TODO: Validate that eid exists in the element table here
             ! TODO: Validate that face is a valid face number for the
             !       corresponding element type (e.g. 1-6 for lsolid20)
-
-            ! Assign values
-            fesim%thermal%fluxes(ii_flux)%eid  = eid
-            fesim%thermal%fluxes(ii_flux)%face = face
-            fesim%thermal%fluxes(ii_flux)%q    = q
         end do
 
         close (40, iostat=io_error)
@@ -17120,6 +16840,57 @@ if (fesim%is_flux_bc) then
     end if
 end if
 
+if (fesim%is_prop_thermal) then
+    fname = 'propthermal.fipps'
+    open (unit=40, file=fname, status='old', action='read', iostat=io_error)
+    if (io_error == 0) then
+        read (40,*,iostat=read_error) rowcount
+        if (read_error /= 0) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'There was a problem reading the number of rows of the file'
+            close(40)
+            err_code=1
+            goto 9999
+        end if
+        if (rowcount < 1) then
+            write(*,*) 'Error reading file ', fname
+            write(*,*) 'At least one data line is required'
+            close(40)
+            err_code=1
+            goto 9999
+        end if
+
+        allocate(fesim%thermal%propthermals(1:rowcount))
+
+        do ii = 1, rowcount
+            read (40,'(2I10)',iostat=read_error) &
+                & fesim%thermal%propthermals(ii)%propid, &
+                  fesim%thermal%propthermals(ii)%tmidid
+            if (read_error /= 0) then
+                write(*,*) 'Error reading file ', fname
+                write(*,*) 'There was an error processing line', ii
+                close(40)
+                err_code=1
+                goto 9999
+            end if
+
+            ! TODO: Validate that eid exists in the element table here
+            ! TODO: Validate that face is a valid face number for the
+            !       corresponding element type (e.g. 1-6 for lsolid20)
+        end do
+
+        close (40, iostat=io_error)
+        if (io_error /= 0) then
+            write(*,*) 'Error closing file ', fname
+            err_code=1
+            goto 9999
+        end if
+    else
+        write (*,*) 'Error opening file ', fname
+        err_code=1
+        goto 9999
+    end if
+end if
 
 !hier die weiteren Randbedingungen, Materialien einlesen
 !diese weiteren karten auch mit der input_process_line-subroutine aus der control auslesen lassen
@@ -17135,13 +16906,13 @@ end if
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'input_tf'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return
@@ -17149,38 +16920,38 @@ return
 contains
 
   subroutine read_contact_beam2_node(unit, rowcount)
-  
+
     implicit none
-    
+
     integer, intent(in)                         :: unit, rowcount
-    
+
     type nodeListItem
       integer                                   :: nid                                  ! Node-ID
       double precision                          :: xi                                   ! Elementkoordinate
       type(nodeListItem), pointer               :: next => null()
     end type nodeListItem
-    
+
     type(nodeListItem), pointer                 :: actItem,tmpItem
-    
+
     type nodeListItemArray
         type(nodeListItem), pointer             :: p
     end type nodeListItemArray
-    
+
     type(nodeListItemArray), allocatable        :: beam2ConNodeList(:)
-    
-    integer                                     :: nodeID, beam2ID, conNum 
+
+    integer                                     :: nodeID, beam2ID, conNum
     integer                                     :: ii,jj,anz,numContactedElems
     double precision                            :: xi
-    
+
     allocate(beam2ConNodeList(1:size(fesim%elemente%beam2s,1)))
-    
+
     do ii = 1,size(fesim%elemente%beam2s,1)
       beam2ConNodeList(ii)%p => null()
     end do
     actItem => null()
-    
+
     numContactedElems = 0
-    
+
     do ii=1,rowcount
       read (unit,'(2I10,E23.16)',iostat=read_error) beam2ID, nodeID, xi
       if (read_error /= 0) then
@@ -17197,15 +16968,15 @@ contains
       else
         numContactedElems = numContactedElems + 1
       end if
-      
+
       beam2ConNodeList(beam2ID)%p => actItem
 
       actItem => null()
     end do
-    
+
     allocate(fesim%randbedingungen%contact_node_beam2(1:numContactedElems))
     conNum = 0
-    
+
     do ii = 1,size(fesim%elemente%beam2s,1)
       if (associated(beam2ConNodeList(ii)%p) .eq. .FALSE.) cycle
       anz = 1
@@ -17229,7 +17000,7 @@ contains
         deallocate(tmpItem)
       end do
     end do
-    
+
     deallocate(beam2ConNodeList)
 
   !
@@ -17237,53 +17008,53 @@ contains
   !
   ! Error handling
   !
-  
+
   9999 continue
-  
+
   if (err_code /= 0) then
-     
+
      write(*,*)                      'An error occured in subroutine'
      write(*,*)                      'read_contact_beam2_node'
      write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
      write(*,*)                      'exit program '
      stop
-     
+
   end if
-      
+
   end subroutine read_contact_beam2_node
 
   subroutine read_contact_quad8_node(unit, rowcount)
-  
+
     implicit none
-    
+
     integer, intent(in)                         :: unit, rowcount
-    
+
     type nodeListItem
       integer                                   :: nid                                  ! Node-ID
       logical                                   :: kpt                                  ! Kontakttyp
       type(nodeListItem), pointer               :: next => null()
     end type nodeListItem
-    
+
     type(nodeListItem), pointer                 :: actItem,tmpItem
-    
+
     type nodeListItemArray
         type(nodeListItem), pointer             :: p
     end type nodeListItemArray
-    
+
     type(nodeListItemArray), allocatable        :: quad8ConNodeList(:)
-    
-    integer                                     :: nodeID, quad8ID, conNum 
+
+    integer                                     :: nodeID, quad8ID, conNum
     integer                                     :: ii,jj,anz,numContactedElems
-    
+
     allocate(quad8ConNodeList(1:size(fesim%elemente%quad8s,1)))
-    
+
     do ii = 1,size(fesim%elemente%quad8s,1)
       quad8ConNodeList(ii)%p => null()
     end do
     actItem => null()
-    
+
     numContactedElems = 0
-    
+
     do ii=1,rowcount
       read (unit,'(2I10)',iostat=read_error) quad8ID, nodeID
       if (read_error /= 0) then
@@ -17299,15 +17070,15 @@ contains
       else
         numContactedElems = numContactedElems + 1
       end if
-      
+
       quad8ConNodeList(quad8ID)%p => actItem
 
       actItem => null()
     end do
-    
+
     allocate(fesim%randbedingungen%contact_node_quad8(1:numContactedElems))
     conNum = 0
-    
+
     do ii = 1,size(fesim%elemente%quad8s,1)
       if (associated(quad8ConNodeList(ii)%p) .eq. .FALSE.) cycle
       anz = 1
@@ -17329,7 +17100,7 @@ contains
         deallocate(tmpItem)
       end do
     end do
-    
+
     deallocate(quad8ConNodeList)
 
   !
@@ -17337,53 +17108,53 @@ contains
   !
   ! Error handling
   !
-  
+
   9999 continue
-  
+
   if (err_code /= 0) then
-     
+
      write(*,*)                      'An error occured in subroutine'
      write(*,*)                      'read_contact_quad8_node'
      write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
      write(*,*)                      'exit program '
      stop
-     
+
   end if
-      
+
   end subroutine read_contact_quad8_node
 
   subroutine read_contact_lsolid20_node(unit, rowcount)
-  
+
     implicit none
-    
+
     integer, intent(in)                         :: unit, rowcount
-    
+
     type nodeListItem
       integer                                   :: nid                                  ! Node-ID
       logical                                   :: kpt                                  ! Kontakttyp
       type(nodeListItem), pointer               :: next => null()
     end type nodeListItem
-    
+
     type(nodeListItem), pointer                 :: actItem,tmpItem
-    
+
     type nodeListItemArray
         type(nodeListItem), pointer             :: p
     end type nodeListItemArray
-    
+
     type(nodeListItemArray), allocatable        :: lsolid20ConNodeList(:)
-    
-    integer                                     :: nodeID, lsolid20ID, conNum 
+
+    integer                                     :: nodeID, lsolid20ID, conNum
     integer                                     :: ii,jj,anz,numContactedElems
-    
+
     allocate(lsolid20ConNodeList(1:size(fesim%elemente%lsolid20s,1)))
-    
+
     do ii = 1,size(fesim%elemente%lsolid20s,1)
       lsolid20ConNodeList(ii)%p => null()
     end do
     actItem => null()
-    
+
     numContactedElems = 0
-    
+
     do ii=1,rowcount
       read (unit,'(2I10)',iostat=read_error) lsolid20ID, nodeID
       if (read_error /= 0) then
@@ -17399,15 +17170,15 @@ contains
       else
         numContactedElems = numContactedElems + 1
       end if
-      
+
       lsolid20ConNodeList(lsolid20ID)%p => actItem
 
       actItem => null()
     end do
-    
+
     allocate(fesim%randbedingungen%contact_node_lsolid20(1:numContactedElems))
     conNum = 0
-    
+
     do ii = 1,size(fesim%elemente%lsolid20s,1)
       if (associated(lsolid20ConNodeList(ii)%p) .eq. .FALSE.) cycle
       anz = 1
@@ -17429,7 +17200,7 @@ contains
         deallocate(tmpItem)
       end do
     end do
-    
+
     deallocate(lsolid20ConNodeList)
 
   !
@@ -17437,34 +17208,34 @@ contains
   !
   ! Error handling
   !
-  
+
   9999 continue
-  
+
   if (err_code /= 0) then
-     
+
      write(*,*)                      'An error occured in subroutine'
      write(*,*)                      'read_contact_lsolid20_node'
      write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
      write(*,*)                      'exit program '
      stop
-     
+
   end if
-      
+
   end subroutine read_contact_lsolid20_node
 
 end subroutine input_tf
-  
-  
-  
-  
-  
 
-  
 
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
 
 ===== source/koopt_sol1_output.f90 =====
 !
@@ -18119,9 +17890,9 @@ end subroutine load_force
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -18174,13 +17945,13 @@ subroutine load_get_loadvector(fesim, FaS, Fout, scloop)
   double precision, dimension(:), allocatable   :: Fa           ! Kraftvektor ohne gesperrte Freiheiten
   double precision, dimension(fesim%num_dof)    :: Fout         ! gesperrter Freiheitenvektor
   integer                                       :: ii
-  
+
   PetscInt                                      :: pii
   PetscErrorCode                                :: ierr
   PetscScalar                                   :: v
   Vec                                           :: FaS          ! Kraftvektor ohne gesperrte Freiheiten als Sparse-Vektor
   integer                                       :: scloop
-  
+
   integer                                       :: err_code=0
 !
 ! =================================================================================================
@@ -18194,13 +17965,13 @@ subroutine load_get_loadvector(fesim, FaS, Fout, scloop)
 ! =================================================================================================
 !
 ! Calculation
-  
+
   Fout = 0.d0
 
   if (fesim%is_load == .true.) then
-     
+
     call load_loadvector (fesim, Fa, Fout, scloop)
-     
+
   end if
 
   if ((fesim%ausgabe%outputVTK .eq. .true.) .or. (fesim%ausgabe%outputUser .eq. .true.)) then
@@ -18215,7 +17986,7 @@ subroutine load_get_loadvector(fesim, FaS, Fout, scloop)
   endif
   !
   ! =================================================================================================
-  
+
   ! convert Fa to sparse
   do ii = 1, fesim%internals%dim_dof
     if (Fa(ii) .NE. 0.d0) then
@@ -18224,25 +17995,25 @@ subroutine load_get_loadvector(fesim, FaS, Fout, scloop)
       call VecSetValue(FaS, pii, v, INSERT_VALUES, ierr); CHKERRQ(ierr)
     end if
   end do
-  
+
   deallocate(Fa)
 !
 ! =================================================================================================
 !
 ! Error handling
-!  
+!
 9999 continue
 
   if (err_code /= 0) then
-   
+
     write(*,*)                      'An error occured in subroutine'
     write(*,*)                      'load_get_loadvector'
     write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
     write(*,*)                      'exit program '
     stop
-   
+
   end if
-  
+
 end subroutine load_get_loadvector
 
 ===== source/load_loadvector.f90 =====
@@ -19601,6 +19372,42 @@ subroutine load_remove_aeropressure(fesim)
   fesim%internals%highestLID = fesim%internals%highestLIDtemp
 
 end subroutine load_remove_aeropressure
+
+===== source/lsolid20_cond.f90 =====
+!
+!  This program developed in FORTRAN is a Finite Element solver for linear-
+!  static analyses as well as linearized stability analyses. It is inherently
+!  coupled to the open-source panel method APAME for providing fluid-structure-
+!  interaction capabilites.
+!
+!  Copyright (C) 2024 TUD Dresden University of Technology
+!
+!  This file is part of FiPPS².
+!
+!  FiPPS² is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!
+!  FiPPS² is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+! =================================================================================================
+!
+!> @brief
+
+!
+!> @details
+
+!
+!> @author Fabian Reisener, TU Dresden
+!
+! =================================================================================================
+subroutine lsolid20_conduction()
+
+end subroutine lsolid20_conduction
 
 ===== source/lsolid20_eps_th.f90 =====
 !
@@ -21416,9 +21223,9 @@ end subroutine lsolid20_stiff_control
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -21514,14 +21321,14 @@ double precision                                  :: zeta_elem, lth_sum
 !
 ! Calculation
 !
- do lay = 1,nlay  
+ do lay = 1,nlay
 
    ! Total number of integration points in current layer
    N = nip*nip*nop(lay)
 
    ! allocate layer specific arrays for integration point values
    allocate(xi_ip(N),eta_ip(N),zeta_ip(N),w_xi(N),w_eta(N),w_zeta(N))
-  
+
    ! get integration points and corresponding weights
    call integration_points_3d(     nip, "Gauss",   xi_ip, w_xi, &
                                    nip, "Gauss",  eta_ip, w_eta, &
@@ -21529,7 +21336,7 @@ double precision                                  :: zeta_elem, lth_sum
 
    ! calculate summed thickness until current layer
    lth_sum = lth_sum + lth(lay)
-   
+
    ! Loop over integration points
    do ii = 1,N
 
@@ -21540,10 +21347,10 @@ double precision                                  :: zeta_elem, lth_sum
      ! (see eq.(22) in Panda, S.; Natarajan, R.: Analysis of laminated composite shell
      !  structures by finite element method. Computers & Structures 14(3-4). 1981. pp. 225-230)
      zeta_elem = -1.d0 + (2.d0*lth_sum - lth(lay)*(1.d0-zeta_ip(ii)))/tth
-  
+
      ! Get derivates of shape functions with respect to global coordinates
      call hexa20_shapefunctions_x_y_z(xi_ip(ii),eta_ip(ii),zeta_elem,node_coords,dNidx,dNidy,dNidz,detJac,J)
-     
+
 !      if (ii .eq. 1) then
 !        first_detJac = detJac
 !      end if
@@ -21552,7 +21359,7 @@ double precision                                  :: zeta_elem, lth_sum
 !      if (detJac*first_detJac .lt. 0.d0) then
 !        sign_switched = .true.
 !      end if
-            
+
      if (detJac < 0.d0) then
        write(*,*) 'for lsolid20 number:                  ', lsolid20Num
        write(*,*) 'element number:                       ', elemNum
@@ -21566,21 +21373,22 @@ double precision                                  :: zeta_elem, lth_sum
 !        write(*,*) 'element number:                       ', elemNum
 !        write(*,*) 'sign switch in determinant of the jacobian'
 !      end if
-     
+
      ! Transform material stiffness matrix from element
      ! to global coordinate system
      call transform_eg_cmat(fesim, Clay(:,:,lay), J, cid, TC)
-     
-     do kk = 1,20
-       do jj = 1,kk
+     ! This loop adds the stiffness contributions of all nodes
+     do kk = 1,20   ! node associated with row block
+       do jj = 1,kk ! node associated with column block, only lower third of stiffness computed and later mirrored
+         ! Ableitung der Interpolationsfunkten des jj-ten Knoten
          Bxj = dNidx(jj)
          Byj = dNidy(jj)
          Bzj = dNidz(jj)
-         
+         ! Ableitung der Interpolationsfunkten des kk-ten Knoten
          Bxk = dNidx(kk)
          Byk = dNidy(kk)
          Bzk = dNidz(kk)
-       
+         ! Anteile des Knotens
          Kpart( 1, 1) = Bxj*(Bxk*TC(1, 1) + Byk*TC(6, 1) + Bzk*TC(5, 1)) + Byj*(Bxk*TC(1, 6) + Byk*TC(6, 6) + Bzk*TC(5, 6)) + Bzj*(Bxk*TC(1, 5) + Byk*TC(6, 5) + Bzk*TC(5, 5))
          Kpart( 2, 1) = Bxj*(Bxk*TC(6, 1) + Byk*TC(2, 1) + Bzk*TC(4, 1)) + Byj*(Bxk*TC(6, 6) + Byk*TC(2, 6) + Bzk*TC(4, 6)) + Bzj*(Bxk*TC(6, 5) + Byk*TC(2, 5) + Bzk*TC(4, 5))
          Kpart( 3, 1) = Bxj*(Bxk*TC(5, 1) + Byk*TC(4, 1) + Bzk*TC(3, 1)) + Byj*(Bxk*TC(5, 6) + Byk*TC(4, 6) + Bzk*TC(3, 6)) + Bzj*(Bxk*TC(5, 5) + Byk*TC(4, 5) + Bzk*TC(3, 5))
@@ -21590,30 +21398,30 @@ double precision                                  :: zeta_elem, lth_sum
          Kpart( 1, 3) = Bxj*(Bxk*TC(1, 5) + Byk*TC(6, 5) + Bzk*TC(5, 5)) + Byj*(Bxk*TC(1, 4) + Byk*TC(6, 4) + Bzk*TC(5, 4)) + Bzj*(Bxk*TC(1, 3) + Byk*TC(6, 3) + Bzk*TC(5, 3))
          Kpart( 2, 3) = Bxj*(Bxk*TC(6, 5) + Byk*TC(2, 5) + Bzk*TC(4, 5)) + Byj*(Bxk*TC(6, 4) + Byk*TC(2, 4) + Bzk*TC(4, 4)) + Bzj*(Bxk*TC(6, 3) + Byk*TC(2, 3) + Bzk*TC(4, 3))
          Kpart( 3, 3) = Bxj*(Bxk*TC(5, 5) + Byk*TC(4, 5) + Bzk*TC(3, 5)) + Byj*(Bxk*TC(5, 4) + Byk*TC(4, 4) + Bzk*TC(3, 4)) + Bzj*(Bxk*TC(5, 3) + Byk*TC(4, 3) + Bzk*TC(3, 3))
+         ! Factor in Abhängigkeit von dem Knotengewicht und dem Anteil der Laminatdicke zur Gesamtdicke
+         fac = weight*detJac*lth(lay)/tth
 
-         fac = weight*detJac*lth(lay)/tth         
-         
-         ks = (kk-1)*3
-         js = (jj-1)*3
-         
+         ks = (kk-1)*3  ! Beginning row of 3x3 block
+         js = (jj-1)*3  ! Beginning column of 3x3 block
+
          do nn = 1,3
            do mm = 1,3
-             lsolid20_K(ks+mm,js+nn) = lsolid20_K(ks+mm,js+nn) + Kpart(mm,nn)*fac
-             
+             lsolid20_K(ks+mm,js+nn) = lsolid20_K(ks+mm,js+nn) + Kpart(mm,nn)*fac   ! Hinzufügen zur Gesamtsteifigkeit des Elements unterhalb der Diagonalen
+
              if (jj .NE. kk) then
-               lsolid20_K(js+mm,ks+nn) = lsolid20_K(js+mm,ks+nn) + Kpart(nn,mm)*fac
+               lsolid20_K(js+mm,ks+nn) = lsolid20_K(js+mm,ks+nn) + Kpart(nn,mm)*fac ! Hinzufügen zur Gesamtsteifigkeit des Elements oberhalb der Diagonalen
              end if
            end do
          end do
-         
+
        end do
      end do
 
    end do
-   
+
    ! deallocate layer specific arrays for integration point values
    deallocate(xi_ip,eta_ip,zeta_ip,w_xi,w_eta,w_zeta)
-   
+
  end do
 
 !     ! If sign of all Jacobians is negative, multiply with -1.d0
@@ -21626,13 +21434,13 @@ double precision                                  :: zeta_elem, lth_sum
 9999 continue
 !
 if (err_code /= 0) then
-!   
+!
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'lsolid20_stiff'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-!   
+!
 end if
 !
 return
@@ -23761,198 +23569,6 @@ end interface
 ! WRITE(*,*) 'Verwendete Zeit (s): ', (ende-start)/dble(ctr)
 END PROGRAM FiPPS
 
-===== source/Makefile =====
-# Makefile
-# erzeugt das Programm FiPPS
-# Finite-elemente ProgrammPaket zur Strukturberechnung
-
-include ../makeconfig.mk
-
-PROGRAM := FiPPS
-OBJEKTE := \
-write_quad_matrix.o \
-lsolid20_strain_displ_matrix.o \
-lsolid20_eps_th.o \
-transform_eg_strain.o \
-\
-hexa20_shapefunctions_xi_eta_zeta.o \
-cosinematrix_esys.o \
-quad8s_temploadvec.o \
-lsolid20_temploadvec.o \
-beam2_shape_functions.o \
-beam2_couplingmatrix.o \
-\
-lsolid20_transformation_matrix.o \
-nodalCoordSysTransMat.o \
-quad8_normals.o \
-quad8_ip_coordsys.o \
-quad8_bmat.o \
-beam2_cosinematrix.o \
-beam2_rotation.o \
-hexa20_shapefunctions_x_y_z.o \
-transform_eg_cmat.o \
-get_node_temperatures.o \
-get_beam2_temperatures.o \
-get_quad8_temperatures.o \
-get_lsolid20_temperatures.o \
-vtkoutpointscalar.o \
-beam2_temploadvec_control.o \
-quad8_temploadvec_control.o \
-lsolid20_temploadvec_control.o \
-lsolid20_initstressvec.o \
-\
-mat1_calc_missing_value.o \
-mat8.o \
-quad8_area.o \
-mat20.o \
-impc_contact_quad8_pointprojection.o \
-impc_contact_lsolid20_naturalcoordinates.o \
-quad8_ansatzfunction_xieta.o \
-quad8_mpc_factors.o \
-spc1_mod_dof.o \
-estimate_number_nonzeros_simple.o \
-estimate_number_nonzeros_block.o \
-assemble_aa.o \
-quad8_stiff.o \
-beam2_get_properties.o \
-beam2_stiff.o \
-lsolid20_stiff.o \
-blow_up_stiff.o \
-load_force.o \
-load_moment.o \
-load_p2load.o \
-load_p8load.o \
-load_p20load.o \
-temperature_loads.o \
-initstress_loads.o \
-quad8_geostiff.o \
-lsolid20_geostiff.o \
-beam2_geostiff.o \
-quad8_ip_strain.o \
-principalValues.o \
-quad8_result_extrapolation_transform.o \
-transform_eg_stress.o \
-lsolid20_extrapolate_gp_strain.o \
-lsolid20_extrapolate_gp_stress.o \
-\
-boundary_spc_control.o \
-boundary_coupling_control.o \
-boundary_mpc_control.o \
-input_process_line.o \
-quad8_prepareproperties.o \
-beam2_prepareProperties.o \
-lsolid20_prepareProperties.o \
-failure_prepare.o \
-aeroload_prepare.o \
-impc_contact_node_beam2.o \
-impc_contact_node_quad8.o \
-impc_contact_node_lsolid20.o \
-vtkoutcelldata_int.o \
-clear_node_node_con.o \
-get_node_node_con.o \
-estimate_number_nonzeros.o \
-quad8_stiff_control.o \
-beam2_stiff_control.o \
-lsolid20_stiff_control.o \
-load_loadvector.o \
-vtkoutstatic.o \
-quad8_geostiff_control.o \
-lsolid20_geostiff_control.o \
-beam2_geostiff_control.o \
-vtkouteig.o \
-vtkoutcelldata.o \
-vtkoutcelldata_vector.o \
-vtkoutpointvektor.o \
-beam2_stress.o \
-quad8_results_elem.o \
-quad8_results_elem_lay.o \
-quad8_results_node.o \
-quad8_strainEnergy_control.o \
-quad8_strainEnergy.o \
-lsolid20_strains_stresses.o \
-lsolid20_results_elem_lay.o \
-lsolid20_strainEnergy_control.o \
-lsolid20_strainEnergy.o \
-get_inverse3.o \
-get_restored_eigenvektors.o \
-\
-input_tf.o \
-update_geometry.o \
-init_values.o \
-impc_control.o \
-vtkoutprep.o \
-vtkoutmesh.o \
-vtkoutelementprop.o \
-vtkoutelemcoord.o \
-vtkoutfixeddispl.o \
-boundary_varload_control.o \
-init_matrices.o \
-init_vectors.o \
-init_elem_proc_dist.o \
-sol1_get_stiffness_matrices.o \
-load_get_loadvector.o \
-sol1_solve.o \
-sol1_calculate_tse.o \
-writeCompTime.o \
-sol1_get_utot.o \
-sol2_reset_kgeo.o \
-sol2_get_geometric_stiffness_matrix.o \
-sol2_solve.o \
-sol2_extract_eigenvalues.o \
-sol2_output_control.o \
-sol2_solve_condensed_problem.o \
-vtkoutend.o \
-free_globals.o \
-aero_coupling.o \
-load_add_aeropressure.o \
-load_add_aeropressure_beam2.o \
-load_add_aeropressure_quad8.o \
-load_remove_aeropressure.o \
-printdisplacements.o \
-sol1_output_control.o \
-sol1_output_advila.o \
-sol1_output_hymowi2.o \
-sol1_output_glawi2.o \
-sol1_output_glawi.o \
-sol1_output_sab.o \
-sol1_reaction_forces.o \
-\
-main.o \
-
-# koopt_sol1_output.o \
-# mat_transform_mat_shell.o \
-# sol1_output_glawi.o \
-# sol1_output_hymowi.o \
-# sol1_output_koopt.o \
-# sol1_output_optitube.o \
-# sol1_output_sab.o \
-# writeinput.o \
-# write_matrix.o \
-# write_quad_matrix.o
-
-###############################################################################
-## rules follow
-###############################################################################
-.PHONY: default clean
-
-all: $(PROGRAM)
-
-$(PROGRAM): kompilieren move
-
-kompilieren: 
-	-${FLINKER} -o $(PROGRAM) $(FIPPS2_LIB) $(APAME_LIB) $(PANEL2D_LIB) $(XFOILWRAPPER_LIB) ${SLEPC_LIB} -L../include/ -lmodule -L../ -luseroutput
-
-move:
-	$(MV) $(PROGRAM) ../.
-
-#flib: $(OBJEKTE)
-
-flib: $(OBJEKTE)
-	$(AR) $(AR_FLAGS) $(FIPPS2_LIB) $^
-
-clean2: clean
-	$(RM) $(FIPPS2_LIB)
-
 ===== source/mat1_calc_missing_value.f90 =====
 !
 !  This program developed in FORTRAN is a Finite Element solver for linear-
@@ -25111,27 +24727,6 @@ subroutine printdisplacements(fesim,scloop,Utot)
   end subroutine printdisplacements_beam2
 
 end subroutine printdisplacements
-
-===== source/pseudo_main_addthermal.txt =====
-main:
-input_tf(fesim)
-if fesim%thermal%enabled:
-    TaS = Tref
-    if fesim%isTd | fesim%isConv # iterative solution necessary if Temperature-dependent thermal material OR convective boundary condition
-        while (norm_TaS_TaSNew > tol):
-            CaaS = thermal_get_conduction_matrix(TaS)
-            QaS = thermal_get_source_matrix(TaS)
-            TaSNew = TaS + relaxationFactor * thermal_solve(fesim,CaaS,TaS,QaS,rank)
-            norm_TaS_TaSNew = |TaSNew-TaS/TaSNew|_infty
-            TaS = TaSNew
-        else:
-            CaaS = thermal_get_conduction_matrix(TaS)
-            QaS = thermal_get_source_matrix(TaS)
-            TaS = thermal_solve(fesim,CaaS,TaS,QaS,rank)
-        thermal_write_output(TaS)
-    if fesim%thermal%coupled:
-        thermal_translate(fesim,TaS)
-
 
 ===== source/quad8_ansatzfunction_xieta.f90 =====
 !
@@ -33466,9 +33061,9 @@ end subroutine sol2_solve_condensed_problem
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -33487,7 +33082,7 @@ end subroutine sol2_solve_condensed_problem
 !
 !> @details
 !
-!> @author 
+!> @author
 !
 !> $Id: sol2_solve.f90 484 2024-10-18 14:28:29Z s1080304 $
 !> $Author: s1080304 $
@@ -33515,7 +33110,7 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
 !
 ! Data types
 !
-  
+
   Mat            :: KaaS
   Mat            :: KgaaS
   EPS            :: eps
@@ -33526,7 +33121,7 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
 #ifndef mod_slepc
   PC             :: prec
 #endif
-  
+
   integer        :: numEigVal
   integer        :: err_code=0
 !
@@ -33547,19 +33142,19 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
   call EPSCreate(PETSC_COMM_WORLD,eps,ierr); CHKERRQ(ierr)
 
   ! ** Set operators. In this case, it is a standard eigenvalue problem
-  call EPSSetOperators(eps,KgaaS,KaaS,ierr); CHKERRQ(ierr)   
+  call EPSSetOperators(eps,KgaaS,KaaS,ierr); CHKERRQ(ierr)
   call EPSSetProblemType(eps,EPS_GHEP,ierr); CHKERRQ(ierr)
 
   !Durch das negative Reziproke wird dieser zum kleinsten positiven Eigenwert
-  call EPSSetWhichEigenpairs(eps,EPS_SMALLEST_REAL,ierr); CHKERRQ(ierr) 
+  call EPSSetWhichEigenpairs(eps,EPS_SMALLEST_REAL,ierr); CHKERRQ(ierr)
   nev = numEigVal
   call EPSSetDimensions(eps,nev,PETSC_DECIDE,PETSC_DECIDE,ierr); CHKERRQ(ierr)
 
   ! ** Set solver parameters at runtime
   call EPSSetFromOptions(eps,ierr); CHKERRQ(ierr)
-  
+
   call EPSGetST(eps,spt,ierr); CHKERRQ(ierr)
-  
+
 #ifdef mod_slepc
 ! Der nächste Abschnitt ist mit der modifzizierten Version von SLEPC zuverwenden
 !_______________________________________________________________________________
@@ -33573,10 +33168,10 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
   call KSPGetPC(ksp,prec,ierr); CHKERRQ(ierr)
   call PCSetType(prec,PCCHOLESKY,ierr); CHKERRQ(ierr)
   call PCFactorSetMatSolverType(prec,MATSOLVERMUMPS,ierr); CHKERRQ(ierr)
-    
+
   call KSPSetErrorIfNotConverged(ksp,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
   call PCSetErrorIfFailure(prec,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
-  
+
   call EPSSetUp(eps,ierr); CHKERRQ(ierr)
 #endif
 
@@ -33589,20 +33184,1081 @@ subroutine sol2_solve(eps, ksp, KaaS, KgaaS, numEigVal)
 ! =================================================================================================
 !
 ! Error handling
-!  
+!
 9999 continue
 
   if (err_code /= 0) then
-   
+
     write(*,*)                      'An error occured in subroutine'
     write(*,*)                      'sol2_solve'
     write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
     write(*,*)                      'exit program '
     stop
-   
+
   end if
 
 end subroutine sol2_solve
+
+===== source/sol3_assemble.f90 =====
+!
+!  This program developed in FORTRAN is a Finite Element solver for linear-
+!  static analyses as well as linearized stability analyses. It is inherently
+!  coupled to the open-source panel method APAME for providing fluid-structure-
+!  interaction capabilites.
+!
+!  Copyright (C) 2024 TUD Dresden University of Technology
+!
+!  This file is part of FiPPS².
+!
+!  FiPPS² is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!
+!  FiPPS² is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!> \file sol3_assemble.f90
+! =================================================================================================
+!
+!>  \brief      subroutine for assembling all matrices and vectors of the thermal problem
+!
+!>  \details    subroutine for assembling all matrices and vectors of the thermal problem
+!>              1. the temperatur vectors
+!>              11. Tf = free temperature dofs
+!>              12. Tc = constrained temperature dofs
+!>              2. the load vectors (if convection, based on prev. temp)
+!>              21. Qf = free flux dofs (between elements)
+!>              22. Qc = constrained dofs (at boundaries, adiabitc=0 if not defined otherwise)
+!>              3. the conduction matrices
+!>              31. Cff = coupling between free and free temperature dofs
+!>              31. Cfc = coupling between constrained and free temperature dofs
+!
+!>  \author     Fabian Reisener, WM, 2026
+!
+! =================================================================================================
+
+subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
+!
+! =================================================================================================
+!
+! Include
+!
+#include "petsc/finclude/petscksp.h"
+  use petscksp
+#include "petsc/finclude/petscis.h"
+  use petscis
+  use fesimulation_typen
+!
+  implicit none
+!
+! =================================================================================================
+!
+! Data types
+!
+! Input
+  type(fe_simulation),intent(inout) :: fesim
+! Output
+  Mat, intent(out)                  :: Cff, Cfc
+  Vec, intent(out)                  :: Tf,Tc,Qf,Qc
+! Internal Vectors/Matrices
+  Mat                               :: C, Ccf, Ccc
+  Vec                               :: T,Q
+  Mat                               :: PermutMat
+  IS                                :: is_free, is_bc
+  PetscErrorCode                    :: ierr
+! Internal other
+  integer                           :: err_code=0
+!
+! =================================================================================================
+!
+! Initialisation
+!
+!
+! =================================================================================================
+!
+! Interfaces
+interface
+  subroutine sol3_set_thermal_dof_map(fesim)
+    use fesimulation_typen
+    implicit none
+    type(fe_simulation), intent(inout) :: fesim
+  end subroutine sol3_set_thermal_dof_map
+
+  subroutine sol3_get_dof_is(fesim,is_free,is_bc)
+    use fesimulation_typen
+    use petscis
+    implicit none
+    type(fe_simulation), intent(in) :: fesim
+    IS, intent(out)                 :: is_free, is_bc
+  end subroutine sol3_get_dof_is
+
+  subroutine sol3_tsolid20_cond_control(fesim,C)
+    use fesimulation_typen
+    use petscmat
+    implicit none
+    type(fe_simulation), intent(in) :: fesim
+    Mat,intent(out)                 :: C
+  end subroutine sol3_tsolid20_cond_control
+
+  subroutine sol3_get_q_vec(fesim,q)
+      use petscvec
+      use fesimulation_typen
+      type(fe_simulation), intent(in)   :: fesim
+      Vec,intent(out)                   :: q
+  end subroutine
+end interface
+! =================================================================================================
+!
+! Calculation
+
+! Set the thermal_dof_map
+  call sol3_set_thermal_dof_map(fesim)
+! Get index sets for free and constrained dofs
+  call sol3_get_dof_is(fesim,is_free,is_bc)
+! Assemble C-Matrix
+  call sol3_tsolid20_cond_control(fesim,C)
+! Get C-submatrices
+  call MatCreateSubMatrix(C, is_free, is_free, MAT_INITIAL_MATRIX, Cff, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_bc,   is_free, MAT_INITIAL_MATRIX, Ccf, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_bc,   is_bc,   MAT_INITIAL_MATRIX, Ccc, ierr); CHKERRQ(ierr)
+! Get Q-Vector
+
+! Cleanup
+  call ISDestroy(is_free, ierr); CHKERRQ(ierr)
+  call ISDestroy(is_bc,   ierr); CHKERRQ(ierr)
+  call MatDestroy(C,ierr); CHKERRQ(ierr)
+  call MatDestroy(Ccf,ierr); CHKERRQ(ierr)
+  call MatDestroy(Ccc,ierr); CHKERRQ(ierr)
+! =================================================================================================
+!
+! Error handling
+!
+9999 continue
+
+if (err_code /= 0) then
+
+   write(*,*)                      'An error occured in subroutine'
+   write(*,*)                      'sol3_assemble'
+   write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
+   write(*,*)                      'exit program '
+   stop
+
+end if
+
+return
+end subroutine sol3_assemble
+
+===== source/sol3_get_conduction_matrices.f90 =====
+!> @brief
+!> control subroutine for obtaining the global conduction matrix from
+!> the different elements and their conduction matrices
+
+subroutine sol3_get_conduction_matrices(fesim,CaaS)
+    !
+  use fesimulation_typen
+!
+! =================================================================================================
+!
+! Include
+!
+#include "petsc/finclude/petscmat.h"
+  use petscmat
+!
+! =================================================================================================
+!
+  implicit none
+!
+! =================================================================================================
+!
+! Data types
+!
+! Input
+!
+  type(fe_simulation), intent(in)               :: fesim
+!
+! Inner
+!
+  integer                                       :: err_code=0
+!
+! Output
+!
+  Mat                                           :: CaaS         ! Konduktionsmatrix ohne gesperrte Freiheiten als Sparse-Matrix
+
+  PetscMPIInt                                   :: rank
+  PetscErrorCode                                :: ierr
+!
+! =================================================================================================
+!
+! Initialisation
+!
+  call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
+!
+! =================================================================================================
+
+! =================================================================================================
+!
+! Calculation
+!
+  if (fesim%is_lsolid20 == .true. .AND. fesim%is_thermal == .true.) then
+    call sol3_tsolid20_cond_control(fesim, CaaS)
+  end if
+!
+! =================================================================================================
+!
+! Error handling
+!
+9999 continue
+
+if (err_code /= 0) then
+
+   write(*,*)                      'An error occured in subroutine'
+   write(*,*)                      'sol3_get_cond_matrices'
+   write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
+   write(*,*)                      'exit program '
+   stop
+
+end if
+
+end subroutine
+
+===== source/sol3_get_dof_is.f90 =====
+!
+!  This program developed in FORTRAN is a Finite Element solver for linear-
+!  static analyses as well as linearized stability analyses. It is inherently
+!  coupled to the open-source panel method APAME for providing fluid-structure-
+!  interaction capabilites.
+!
+!  Copyright (C) 2024 TUD Dresden University of Technology
+!
+!  This file is part of FiPPS².
+!
+!  FiPPS² is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!
+!  FiPPS² is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!> \file sol3_get_dof_is.f90
+! =================================================================================================
+!
+!>  \brief      get the index sets which include free and constrained dof indices
+!
+!>  \details    get the index sets which include free and constrained dof indices
+!
+!>  \author     Fabian Reisener, WM, 2026
+!
+! =================================================================================================
+subroutine sol3_get_dof_is(fesim,is_free,is_bc)
+!
+! =================================================================================================
+!
+! Include
+!
+#include "petsc/finclude/petscksp.h"
+  use petscksp
+  use fesimulation_typen
+  use internals_typen
+!
+! =================================================================================================
+!
+! Data types
+!
+  implicit none
+! Input
+  type(fe_simulation),intent(in)  :: fesim
+! Output
+  IS, intent(out)                 :: is_free, is_bc
+! Internal PETSC
+  PetscInt, allocatable           :: freeList(:), bcList(:)
+  PetscInt                        :: nfree, nbc
+  PetscErrorCode                  :: ierr
+! Internal other
+  integer                         :: ii,jj,ll,nn
+  integer                         :: err_code=0
+! =================================================================================================
+!
+! Calculation
+! Get free and constrained index sets from thermal_dof_map
+  nfree = 0
+  nbc   = 0
+  do ii = 1, size(fesim%internals%thermal_dof_map, dim=1)
+     if (fesim%internals%thermal_dof_map(ii,1) == 0) then
+        nfree = nfree + 1
+     else
+        nbc   = nbc + 1
+     end if
+  end do
+
+  allocate(freeList(nfree), bcList(nbc))
+
+  nfree = 0
+  nbc   = 0
+  do ii = 1, size(fesim%internals%thermal_dof_map, dim=1)
+     if (fesim%internals%thermal_dof_map(ii,1) == 0) then           ! If type is set to 0, that dof is free
+        nfree = nfree + 1
+        freeList(nfree) = fesim%internals%thermal_dof_map(ii,2) - 1 ! Shift to 0-based PETSc indexing from Node 1-based indices
+     else
+        nbc = nbc + 1
+        bcList(nbc)     = fesim%internals%thermal_dof_map(ii,2) - 1 ! Shift to 0-based PETSc indexing from Node 1-based indices
+     end if
+  end do
+
+  call ISCreateGeneral(PETSC_COMM_WORLD, nfree, freeList, PETSC_COPY_VALUES, is_free, ierr); CHKERRQ(ierr)
+  call ISCreateGeneral(PETSC_COMM_WORLD, nbc,   bcList,   PETSC_COPY_VALUES, is_bc,   ierr); CHKERRQ(ierr)
+
+! Cleanup
+  deallocate(freeList, bcList)
+! =================================================================================================
+!
+! Error handling
+!
+9999 continue
+
+if (err_code /= 0) then
+
+   write(*,*)                      'An error occured in subroutine'
+   write(*,*)                      'sol3_get_dof_is'
+   write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
+   write(*,*)                      'exit program '
+   stop
+end if
+
+return
+end subroutine
+
+===== source/sol3_get_permut_mat.f90 =====
+!
+!  This program developed in FORTRAN is a Finite Element solver for linear-
+!  static analyses as well as linearized stability analyses. It is inherently
+!  coupled to the open-source panel method APAME for providing fluid-structure-
+!  interaction capabilites.
+!
+!  Copyright (C) 2024 TUD Dresden University of Technology
+!
+!  This file is part of FiPPS².
+!
+!  FiPPS² is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!
+!  FiPPS² is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!> \file sol3_get_PermutMat.f90
+! =================================================================================================
+!
+!>  \brief      subroutine for the permutation of thermal matrices
+!
+!>  \details    subroutine for the permutation of thermal matrices
+!
+!>  \author     Fabian Reisener, WM, 2026
+!
+! =================================================================================================
+
+subroutine sol3_get_PermutMat(fesim,C,Cff,Cfc,Ccf,Ccc)
+!
+! =================================================================================================
+!
+! Include
+!
+use petscksp
+use fesimulation_typen
+use internals_typen
+!
+! =================================================================================================
+!
+! Data types
+!
+implicit none
+! Input
+type(fe_simulation),intent(inout)   :: fesim
+Mat, intent(in)                     :: C
+! Output
+Mat, intent(out)                    :: Cff, Cfc, Ccf, Ccc
+! Internal PETSC
+PetscErrorCode                      :: ierr
+!
+! =================================================================================================
+!
+! Initialisation
+!
+!
+! =================================================================================================
+!
+! Calculation
+
+! Get index sets for free and constrained dofs
+  call sol3_get_dof_is(fesim,is_free,is_bc)
+! Get submatrices
+  call MatCreateSubMatrix(C, is_free, is_free, MAT_INITIAL_MATRIX, Cff, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_bc,   is_free, MAT_INITIAL_MATRIX, Ccf, ierr); CHKERRQ(ierr)
+  call MatCreateSubMatrix(C, is_bc,   is_bc,   MAT_INITIAL_MATRIX, Ccc, ierr); CHKERRQ(ierr)
+
+! Cleanup
+  call ISDestroy(is_free, ierr); CHKERRQ(ierr)
+  call ISDestroy(is_bc,   ierr); CHKERRQ(ierr)
+
+! =================================================================================================
+!
+! Error handling
+!
+9999 continue
+
+if (err_code /= 0) then
+
+   write(*,*)                      'An error occured in subroutine'
+   write(*,*)                      'sol3_get_permut_mat'
+   write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
+   write(*,*)                      'exit program '
+   stop
+end if
+
+return
+end subroutine
+
+===== source/sol3_get_q_vec.f90 =====
+!
+!  This program developed in FORTRAN is a Finite Element solver for linear-
+!  static analyses as well as linearized stability analyses. It is inherently
+!  coupled to the open-source panel method APAME for providing fluid-structure-
+!  interaction capabilites.
+!
+!  Copyright (C) 2024 TUD Dresden University of Technology
+!
+!  This file is part of FiPPS².
+!
+!  FiPPS² is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!
+!  FiPPS² is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+! =================================================================================================
+!
+!> @brief
+!> subroutine for creating the global thermal flux vector q
+!
+!> @details
+!> subroutine for creating the global thermal flux vector q
+!
+!> @author Fabian Reisener, TU Dresden, WM 2026
+!
+! =================================================================================================
+subroutine sol3_get_q_vec(fesim,q)
+! =================================================================================================
+! Use
+!
+use fesimulation_typen
+!
+! =================================================================================================
+!
+! Include
+!
+#include "petsc/finclude/petscvec.h"
+  use petscvec
+!
+! =================================================================================================
+!
+  implicit none
+!
+! =================================================================================================
+!
+! Interfaces
+!
+! =================================================================================================
+!
+! Data types
+!
+! Input
+!
+  type(fe_simulation), intent(in)   :: fesim
+!
+! Output
+!
+  Vec,intent(out)                   :: q
+!
+! Internal
+!
+  PetscMPIInt                       :: rank
+  PetscErrorCode                    :: ierr
+!
+! =================================================================================================
+!
+! Initialisation
+!
+!
+! =================================================================================================
+!
+! Calculation
+!
+end subroutine
+
+===== source/sol3_set_thermal_dof_map.f90 =====
+!
+!  This program developed in FORTRAN is a Finite Element solver for linear-
+!  static analyses as well as linearized stability analyses. It is inherently
+!  coupled to the open-source panel method APAME for providing fluid-structure-
+!  interaction capabilites.
+!
+!  Copyright (C) 2024 TUD Dresden University of Technology
+!
+!  This file is part of FiPPS².
+!
+!  FiPPS² is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!
+!  FiPPS² is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!> \file sol3_set_thermal_dof_map.f90
+! =================================================================================================
+!
+!>  \brief      subroutine for setting the thermal_dof_map
+!
+!>  \details    subroutine for setting the thermal_dof_map
+!>              1. temperatureBC
+!>              2. fluxBC
+!>              3. convectionBC
+!
+!>  \author     Fabian Reisener, WM, 2026
+!
+! =================================================================================================
+
+subroutine sol3_set_thermal_dof_map(fesim)
+!
+! =================================================================================================
+!
+! Include
+!
+#include "petsc/finclude/petscksp.h"
+  use petscksp
+  use fesimulation_typen
+!
+! =================================================================================================
+!
+! Data types
+!
+  implicit none
+! Input
+  type(fe_simulation),intent(inout) :: fesim
+! Output
+! Internal other
+  integer                           :: ii,jj,ll,nn
+  integer                           :: err_code
+  integer,dimension(8)              :: node_ids
+!
+! =================================================================================================
+!
+! Initialisation
+!
+!
+! =================================================================================================
+!
+! Calculation
+ ! 11. Loop over all nodes, assign 0 to their row (NID) fesim%internal%thermal_dof_map
+ nn = size(fesim%knoten%nodes)
+ allocate(fesim%internals%thermal_dof_map(nn,4))
+ do ii=1,nn
+    fesim%internals%thermal_dof_map(ii,1) = fesim%knoten%nodes(ii)%nid
+    fesim%internals%thermal_dof_map(ii,2) = 0. ! No BC has been assigned yet
+ end do
+
+ ! 12. Loop over all thermal boundary conditions, assign values to the row in thermal_dof_map if assigned
+ ! 121. Loop over temperature BCs
+ do ii=1,size(fesim%thermal%tbcs)
+    ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(fesim%thermal%tbcs(ii)%nid),dim=1) ! Find index of nid in thermal_dof_map
+    if (ll == 0) then
+        write(*,*) 'NID ',fesim%thermal%tbcs(ii)%nid,' from TemperatureBC could not be found in thermal_dof_map!'
+        err_code = 2
+        goto 9999
+    end if
+
+    fesim%internals%thermal_dof_map(ll,2) = 1.                                          ! Set the type to 1 to signal temperature bc
+    fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%tbcs(ii)%temperature          ! Set the temperature value at the node
+ end do
+
+ ! 122. Loop over flux BCs
+ do ii=1,size(fesim%thermal%fluxes)
+    node_ids(1) = fesim%thermal%fluxes(ii)%nid1
+    node_ids(2) = fesim%thermal%fluxes(ii)%nid2
+    node_ids(3) = fesim%thermal%fluxes(ii)%nid3
+    node_ids(4) = fesim%thermal%fluxes(ii)%nid4
+    node_ids(5) = fesim%thermal%fluxes(ii)%nid5
+    node_ids(6) = fesim%thermal%fluxes(ii)%nid6
+    node_ids(7) = fesim%thermal%fluxes(ii)%nid7
+    node_ids(8) = fesim%thermal%fluxes(ii)%nid8
+
+    do jj=1,8
+        ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(node_ids(jj)),dim=1)   ! Find index of nid in thermal_dof_map
+        if (ll == 0) then
+            write(*,*) 'NID ',node_ids(jj),' from fluxBc could not be found in thermal_dof_map!'
+            err_code = 2
+            goto 9999
+        end if
+
+        if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
+            write(*,*) 'Cannot assign fluxBC to Node with ID ',node_ids(jj)
+            if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
+                write(*,*) 'Since it has already been assigned a temperatureBC'
+            else
+                write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
+            endif
+            err_code = 2
+            goto 9999
+        end if
+        fesim%internals%thermal_dof_map(ll,2) = 2.                              ! Set the type to 1 to signal temperature bc
+        fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%fluxes(ii)%q      ! Set the temperature value at the node
+    end do
+ end do
+
+ ! 123. Loop over convection BCs
+ do ii=1,size(fesim%thermal%convections)
+    node_ids(1) = fesim%thermal%convections(ii)%nid1
+    node_ids(2) = fesim%thermal%convections(ii)%nid2
+    node_ids(3) = fesim%thermal%convections(ii)%nid3
+    node_ids(4) = fesim%thermal%convections(ii)%nid4
+    node_ids(5) = fesim%thermal%convections(ii)%nid5
+    node_ids(6) = fesim%thermal%convections(ii)%nid6
+    node_ids(7) = fesim%thermal%convections(ii)%nid7
+    node_ids(8) = fesim%thermal%convections(ii)%nid8
+
+    do jj=1,8
+        ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(node_ids(jj)),dim=1)   ! Find index of nid in thermal_dof_map
+        if (ll == 0) then
+            write(*,*) 'NID ',node_ids(jj),' from convectionBc could not be found in thermal_dof_map!'
+            err_code = 2
+            goto 9999
+        end if
+        if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
+            write(*,*) 'Cannot assign convectionBc to Node with ID ',node_ids(jj)
+            if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
+                write(*,*) 'Since it has already been assigned a temperatureBC'
+            elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.) then
+                write(*,*) 'Since it has already been assigned a fluxBC'
+            else
+                write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
+            end if
+            err_code = 2
+            goto 9999
+        end if
+        fesim%internals%thermal_dof_map(ll,2) = 3.                              ! Set the type to 1 to signal temperature bc
+        fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%convections(ii)%h ! Set the temperature value at the node
+        fesim%internals%thermal_dof_map(ll,4) = fesim%thermal%convections(ii)%T_amb ! Set the temperature value at the node
+    end do
+ end do
+ ! 124. Loop over MPCs
+ do ii=1,size(fesim%randbedingungen%mpcs)
+    ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(fesim%randbedingungen%mpcs(ii)%dependend%nid),dim=1)   ! Find index of nid in thermal_dof_map
+    if (ll == 0) then
+        write(*,*) 'NID ',fesim%randbedingungen%mpcs(ii)%dependend%nid,' from MPCID: ',fesim%randbedingungen%mpcs(ii)%sid,' could not be found in thermal_dof_map!'
+        err_code = 2
+        goto 9999
+    end if
+
+    if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
+        write(*,*) 'Cannot assign MPCID: ',fesim%randbedingungen%mpcs(ii)%sid,' to dependent Node with ID ',fesim%randbedingungen%mpcs(ii)%dependend%nid
+        if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
+            write(*,*) 'Since it has already been assigned a temperatureBC'
+        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.) then
+            write(*,*) 'Since it has already been assigned a fluxBC'
+        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 3.) then
+            write(*,*) 'Since it has already been assigned a convectionBC'
+        else
+            write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
+        end if
+        err_code = 2
+        goto 9999
+    end if
+    fesim%internals%thermal_dof_map(ll,2) = 4.
+    fesim%internals%thermal_dof_map(ll,3) = fesim%randbedingungen%mpcs(ii)%sid
+ end do
+ ! 13. Loop over thermal_dof_map and create the permutation matrix PermutMat for the reordering of all matrices
+
+! =================================================================================================
+!
+! Error handling
+!
+9999 continue
+
+if (err_code /= 0) then
+
+   write(*,*)                      'An error occured in subroutine'
+   write(*,*)                      'sol3_set_thermal_dof_map'
+   write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
+   write(*,*)                      'exit program '
+   stop
+
+end if
+
+return
+end subroutine sol3_set_thermal_dof_map
+
+===== source/sol3_tsolid20_cond_control.f90 =====
+!
+!  This program developed in FORTRAN is a Finite Element solver for linear-
+!  static analyses as well as linearized stability analyses. It is inherently
+!  coupled to the open-source panel method APAME for providing fluid-structure-
+!  interaction capabilites.
+!
+!  Copyright (C) 2024 TUD Dresden University of Technology
+!
+!  This file is part of FiPPS².
+!
+!  FiPPS² is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!
+!  FiPPS² is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+! =================================================================================================
+!
+!> @brief
+!> control subroutine for computing element conduction matrix for quadratic
+!> 20-node solid element and assemble it to the total
+!> stiffness matrix
+!
+!> @details
+!> subroutine calculates the element conduction matrix for quadratic 20-node
+!> solid element and assembles it to the total stiffness matrix
+!
+!> @author Fabian Reisener, TU Dresden, WM 2026
+!
+! =================================================================================================
+subroutine sol3_tsolid20_cond_control(fesim,C)
+! =================================================================================================
+! Use
+!
+use fesimulation_typen
+!
+! =================================================================================================
+!
+! Include
+!
+#include "petsc/finclude/petscmat.h"
+use petscmat
+!
+! =================================================================================================
+!
+implicit none
+!
+! =================================================================================================
+!
+! Interfaces
+interface
+  subroutine sol3_tsolid20_cond(fesim, node_coords, node_ids, lsolid20Num, elemNum, k, tsolid20_C)
+    use integration_schemes
+    use fesimulation_typen
+    implicit none
+    type(fe_simulation), intent(in)      :: fesim
+    double precision, intent(in)         :: node_coords(20,3)
+    integer, intent(in)                  :: node_ids(20)
+    integer, intent(in)                  :: lsolid20Num, elemNum
+    type(thermal_curve_type), intent(in) :: k
+    double precision, intent(out)        :: tsolid20_C(20,20)
+  end subroutine sol3_tsolid20_cond
+end interface
+! =================================================================================================
+!
+! Data types
+!
+! Input
+!
+type(fe_simulation), intent(in)         :: fesim
+!
+! Output
+!
+Mat,intent(out)                 :: C !< C
+!
+! Input + Output
+!
+!
+! Internal
+!
+integer, dimension(20)             :: node_ids
+double precision, dimension(20,3)   :: node_coords
+double precision, dimension(20,20)  :: tsolid20_C
+
+integer                             :: ii,jj, kk,ll,e,lsolid20Num,elemNum,nnodes_per_elem
+integer                             :: err_code=0
+integer                             :: pid, tmidid
+type(thermal_curve_type)            :: k
+
+PetscMPIInt                         :: rank
+PetscErrorCode                      :: ierr
+!
+! =================================================================================================
+!
+! Initialisation
+nnodes_per_elem=20
+!
+!
+! =================================================================================================
+!
+! Calculation
+!
+ call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
+
+! Create global conductivity matrix C
+ call MatCreateAIJ( PETSC_COMM_WORLD,           &
+                    PETSC_DECIDE, PETSC_DECIDE, &
+                    nglobal, nglobal,           &
+                    32, PETSC_NULL_INTEGER,     &
+                    32, PETSC_NULL_INTEGER,     &
+                    C, ierr)
+
+! Iter through all the elements
+ do jj = 1,size(fesim%elemente%lsolid20s,1)
+    if (mpi_lsolid20_proc_dist(jj) .NE. rank) cycle
+
+    pid = fesim%elemente%lsolid20s(jj)%pid ! PropertyID des Elements
+    tmidid = 0 ! ID des Thermischen Materials initialisieren
+    ! Wärmeleitkoeffizientenkurve holen
+    do kk=1,size(fesim%thermal%propthermals)
+        if (fesim%thermal%propthermals(kk)%propid == pid) then
+            tmidid = fesim%thermal%propthermals(kk)%tmidid ! MatThermalTd gefunden! --> TMIDID speichern!
+            do ll=1,size(fesim%thermal%materials_td)
+                if (fesim%thermal%materials_td(ll)%mid == tmidid) then
+                    k = fesim%thermal%materials_td(ll)%k ! k gefunden! --> Speichern!
+                    exit
+                end if
+            end do
+            if (tmidid .NE. 0) then
+                exit
+            end if
+        end if
+    end do
+
+    if (tmidid .EQ. 0) then
+       write(*,*) 'for lsolid20 number:                  ', lsolid20Num
+       write(*,*) 'element number:                       ', elemNum
+       write(*,*) 'the thermal material could not be found'
+       err_code = 2
+       goto 9999
+    end if
+
+    ! Get node_ids and node_coords
+    do ii=1,20
+        node_ids(ii) = fesim%elemente%lsolid20s(jj)%nids(ii)
+        node_coords(ii,:) = fesim%knoten%nodes(node_ids(ii))%coords
+    end do
+
+    ! Get local tsolid20_C-Matrix
+    call sol3_tsolid20_cond(fesim,node_coords,node_ids,tsolid20Num,elemNum,k,tsolid20_C)
+    ! Assemble
+    call MatSetValues(  C,20,node_ids-1,20,node_ids-1,tsolid20_C(1:20,1:20),ADD_VALUES,ierr)
+ end do
+
+! Finalize global assembly
+ call MatAssemblyBegin(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
+ call MatAssemblyEnd(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
+!
+! =================================================================================================
+!
+! Error handling
+!
+9999 continue
+
+if (err_code /= 0) then
+
+   write(*,*)                      'An error occured in subroutine'
+   write(*,*)                      'tsolid20_cond_control'
+   write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
+   write(*,*)                      'exit program '
+   stop
+
+end if
+
+return
+
+end subroutine
+
+===== source/sol3_tsolid20_cond.f90 =====
+!
+!  This program developed in FORTRAN is a Finite Element solver for linear-
+!  static analyses as well as linearized stability analyses. It is inherently
+!  coupled to the open-source panel method APAME for providing fluid-structure-
+!  interaction capabilites.
+!
+!  Copyright (C) 2024 TUD Dresden University of Technology
+!
+!  This file is part of FiPPS².
+!
+!  FiPPS² is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!
+!  FiPPS² is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+! =================================================================================================
+!
+!> @brief
+!> control subroutine for computing element conduction matrix for quadratic
+!> 20-node solid element and assemble it to the total
+!> stiffness matrix
+!
+!> @details
+!> subroutine calculates the element conduction matrix for quadratic 20-node
+!> solid element and assembles it to the total stiffness matrix
+!
+!> @author Fabian Reisener, TU Dresden, WM 2026
+!
+! =================================================================================================
+subroutine sol3_tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
+! =================================================================================================
+! use
+!
+ use integration_schemes
+ use fesimulation_typen
+!
+! =================================================================================================
+!
+implicit none
+!
+! =================================================================================================
+!
+! Interfaces
+! =================================================================================================
+!
+! Data types
+!
+! Input
+type(fe_simulation), intent(in)                   :: fesim
+double precision, intent(in)                      :: node_coords(20,3)  !< (20,3)-Array containing global coordinates of element nodes
+integer, intent(in)                               :: node_ids(20)       !< 20-Array containing all node-ids for eval of IP-temperature
+integer, intent(in)                               :: lsolid20Num        !< number of the lsolid20 element (only used for error messages)
+integer, intent(in)                               :: elemNum            !< element number of the lsolid20 element (only used for error messages)
+type(thermal_curve_type), intent(in)              :: k                  !< thermal curve of element
+!
+! Output
+double precision, intent(out), dimension(20,20)   :: tsolid20_C !< 20x20-Element conduction matrix
+!
+! Internal
+integer                                           :: err_code=0, ii, jj, kk, N
+double precision, allocatable, dimension(:)       :: xi_ip, eta_ip, zeta_ip
+double precision, allocatable, dimension(:)       :: w_xi, w_eta, w_zeta
+double precision, dimension(20)                   :: dNidx, dNidy, dNidz, J
+double precision, dimension(20)                   :: Ni,dNidxi, dNideta, dNidzeta
+double precision                                  :: weight, detJac
+
+
+double precision                                  :: c, T_ip
+!
+! =================================================================================================
+!
+! Initialisation
+!
+tsolid20_C = 0.d0
+!
+! =================================================================================================
+!
+! Calculation
+!
+! Total number of integration points in Tsolid20-Element
+N = 8
+
+! allocate layer specific arrays for integration point values
+allocate(xi_ip(N),eta_ip(N),zeta_ip(N),w_xi(N),w_eta(N),w_zeta(N))
+
+! set integration points and corresponding weights
+call integration_points_3d( 2, "Gauss",   xi_ip, w_xi, &
+                            2, "Gauss",  eta_ip, w_eta, &
+                            2, "Gauss", zeta_ip, w_zeta)
+
+! Loop over integration points
+do ii=1,N
+    ! Get the weight of the integration point
+    weight = w_xi(ii)*w_eta(ii)*w_zeta(ii)
+
+    ! check if Element is malformed
+    if (detJac < 0.d0) then
+       write(*,*) 'for lsolid20 number:                  ', lsolid20Num
+       write(*,*) 'element number:                       ', elemNum
+       write(*,*) 'negative determinant of the jacobian: ', detJac
+       err_code = 2
+       goto 9999
+     end if
+
+    ! Temperatur an IP über Quadratur holen, falls ein Temperaturfeld bereits berechnet wurde
+    if (allocated(fesim%thermal%temperature)) then
+        T_ip = 0.d0
+        call hexa20_shapefunctions_xi_eta_zeta(xi_ip(ii), eta_ip(ii), zeta_ip(ii), Ni, dNidxi, dNideta, dNidzeta)
+        do jj=1,20
+            if (node_ids(jj) >= 1 .and. node_ids(jj) <= size(fesim%thermal%temperature)) then
+                T_ip = T_ip + Ni(jj) * fesim%thermal%temperature(node_ids(jj)) ! Knotenanteil der IP-Temperatur hinzufügen
+            end if
+        end do
+    else
+        T_ip = fesim%thermal%tref ! IP-Temperatur wird ansonsten auf Referenztemperatur der Simulation gesetzt
+    end if
+    ! Wärmeleitungskoeffizient über Temperatur am IP holen
+    c = thermal_curve_eval(k,T_ip)
+
+
+    ! This adds the conduction contributions of all nodes
+    ! Get derivates of shape functions with respect to global coordinates
+    call hexa20_shapefunctions_x_y_z(xi_ip(ii),eta_ip(ii),zeta_ip(ii),node_coords,dNidx,dNidy,dNidz,detJac,J)
+    ! Loop over all nodes
+    do kk = 1,20   ! node associated with row block
+        do jj = 1,kk ! node associated with column block, only until kk, as upper third of stiffness is later simply mirrored
+            ! Hinzufügen des Knotenanteils zur Leitungsmatrix
+            tsolid20_C(jj,kk) = tsolid20_C(jj,kk) + c * weight * dNidx(jj)*dNidx(kk) + dNidy(jj)*dNidy(kk) + dNidz(jj)*dNidz(kk)
+        end do
+    end do
+end do
+
+! The integrand is symmetric; mirror the computed lower triangle.
+do kk = 1, 20
+    do jj = 1, kk-1
+        tsolid20_C(jj,kk) = tsolid20_C(kk,jj)
+    end do
+end do
+! =================================================================================================
+!
+! Error handling
+!
+9999 continue
+!
+if (err_code /= 0) then
+!
+   write(*,*)                      'An error occured in subroutine'
+   write(*,*)                      'tsolid20_cond'
+   write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
+   write(*,*)                      'exit program '
+   stop
+!
+end if
+!
+return
+!
+end subroutine
 
 ===== source/spc1_mod_dof.f90 =====
 !
