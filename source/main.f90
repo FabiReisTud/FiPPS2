@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -67,7 +67,7 @@ interface
         double precision, dimension(:,:), intent(in)        :: pAeroElem
         double precision, dimension(:), intent(in)          :: F_total_aero
     end subroutine readpressure
-    
+
     subroutine sol1_output_glawi2(fesim,Utot,scloop,cdi,aeroConverged)
         use fesimulation_typen
         implicit none
@@ -77,16 +77,16 @@ interface
         double precision, dimension(:)                      :: cdi
         logical                                             :: aeroConverged
     end subroutine sol1_output_glawi2
-    
+
     subroutine sol1_output_hymowi2(fesim,Utot,scloop,aeroConverged)
         use fesimulation_typen
-        implicit none  
+        implicit none
         type(fe_simulation), intent(in)                         :: fesim
         double precision, dimension(fesim%num_dof), intent(in)  :: Utot
         integer,intent(in)                                      :: scloop
         logical, intent(in)                                     :: aeroConverged
     end subroutine sol1_output_hymowi2
-    
+
     subroutine sol1_output_control(fesim,Utot,scloop,cdi,aeroConverged)
         use fesimulation_typen
         implicit none
@@ -96,7 +96,7 @@ interface
         double precision, dimension(:), allocatable, intent(in) :: cdi
         logical, intent(in)                                     :: aeroConverged
     end subroutine sol1_output_control
-    
+
     subroutine sol1_reaction_forces(fesim, Utot, Ftot, rank)
         use fesimulation_typen
         implicit none
@@ -156,7 +156,7 @@ end interface
   Vec                                                   :: UaS          ! Verschiebungsvektor als MPI-Sparse-Vektor
   Vec                                                   :: UaSseq       ! Verschiebungsvektor als Seq-Sparse-Vektor zur Ausgabe und Berechnung der Loesung
   Vec                                                   :: FaS          ! Kraftvektor ohne gesperrte Freiheiten als Sparse-Vektor
-! !      
+! !
   EPS                                                   :: eps
   KSP                                                   :: ksp
   PetscErrorCode                                        :: ierr
@@ -166,7 +166,7 @@ end interface
   PetscInt                                              :: major
   PetscInt                                              :: minor
   PetscInt                                              :: subminor
-  
+
   type(fe_simulation)                                   :: fesim
 
   integer                                               :: scloop
@@ -218,8 +218,8 @@ end interface
     write(*,'(a)') '************************************************************************************************************************'
     write(*,*) ''
     write(*,*) ''
-  end if  
-  
+  end if
+
   if (rank == 0) then
       compTime = 0.d0
       solvTime = 0.d0
@@ -229,7 +229,7 @@ end interface
       lvecTime = 0.d0
       maxDispl = 0.d0
   end if
-  
+
   ! Initialisieren der Defaultwerte
   call init_default(fesim)
 
@@ -239,13 +239,13 @@ end interface
   ! Einlesen der Dateien des Problems
   !
   if (rank == 0) then
-  
+
     if (textoutput .eq. .true.) write(*,*) 'START - Lese Modell'
     call input_tf (fesim)                                                       ! Einlesen der Inputdateien
     if (textoutput .eq. .true.) write(*,*) 'ENDE  - Lese Modell'
 
     call SYSTEM_CLOCK(startI1,ctrI1,ctmI1)
-        
+
     if (textoutput .eq. .true.) write(*,*) 'START - Initialisiere Variablen'
     call init_values (fesim)
     if (textoutput .eq. .true.) write(*,*) 'ENDE  - Initialisiere Variablen'
@@ -253,35 +253,30 @@ end interface
     ! Der Aufruf der internen MPCs sollte vor dem Herausschreiben des Netzes
     ! erfolgen, damit eventuelle Anpassungen an z.B. Kontenkoordinaten entahlten sind
     if (textoutput .eq. .true.) write(*,*) 'START - Erzeuge interne MPCs (z.B. Kontakte)'
-    call impc_control(fesim)                                                                              
+    call impc_control(fesim)
     if (textoutput .eq. .true.) write(*,*) 'ENDE  - Erzeuge interne MPCs (z.B. Kontakte)'
 
     call SYSTEM_CLOCK(endeI1,ctrI1,ctmI1)
     initTime  = initTime + (endeI1-startI1)/DBLE(ctrI1)
-    
+
   end if
 
   if (mpisize .GT. 1) then
       call bcast_fesim(fesim)
   end if
-  
+
   if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'START - Bestimme MPI-Interna'
   call init_elem_proc_dist(fesim, mpisize)
   if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'ENDE  - Bestimme MPI-Interna'
-  
+
   ! =================================================================================================
   !
   ! Steady state thermal solution solution
 
     if (fesim%thermal%enabled) then
-      if (thermal_is_td(fesim%thermal) .or. thermal_is_conv(fesim%thermal)) then ! Run nonlinear, iterative solve until convergence criterium is met
-          write(*,*)
-      else ! Run direct solve
-          write(*,*)
-      end if
-      write(*,*)
+        call sol3_assemble
     end if
-    
+
 
 
   ! =================================================================================================
@@ -292,7 +287,7 @@ end interface
         write(*,*)
         write(*,*) 'SUBCASE ', scloop, ' von ', fesim%num_subcases
     end if
-    
+
     if (aeroConverged .eq. .true.) then
       if (fesim%lasten%subcases(scloop)%readApameInput .ne. .true.) then
         cycle
@@ -304,20 +299,20 @@ end interface
         maxDispl = 0.d0
       end if
     end if
-    
+
     if (fesim%lasten%subcases(scloop)%upmats .eq. .true.) then
-        
+
         if (rank == 0) then
-        
+
             allocate ( fesim%internals%num_dof_vec(fesim%num_dof) )
-            
+
             !
             ! =================================================================================================
             !
             ! Integrate homogeneous boundary conditions
             !
             ! only for the case of constant boundary conditions and varying loadvectors for subcases
-            
+
             call SYSTEM_CLOCK(startC,ctrC,ctmC)
             call SYSTEM_CLOCK(startI2,ctrI2,ctmI2)
 
@@ -326,9 +321,9 @@ end interface
             if (textoutput .eq. .true.) write(*,*) 'ENDE  - Erstelle Indexvektor'
 
         end if
-        
+
         call bcast_internals(fesim%internals,fesim%num_dof)
-        
+
         if (scloop .GT. 1) then
             if (fesim%is_lsolid20 == .true.) then
                 if (rank .eq. 0) then
@@ -336,11 +331,11 @@ end interface
                     call lsolid20_prepareProperties(fesim,scloop)
                     if (textoutput .eq. .true.) write(*,*) 'ENDE  - Aktualisiere LSolid20 Eigenschaften'
                 end if
-                
+
                 WRITE(*,*) 'Verteile Eigenschaften'
-                
+
                 call bcast_eigenschaften(fesim%eigenschaften,.false.,.false.,.false.,.true.)
-                
+
             end if
         end if
 
@@ -367,7 +362,7 @@ end interface
         if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'START - Erstelle Steifigkeitsmatrix'
         call sol1_get_stiffness_matrices(fesim, KaaS)
         if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'ENDE  - Erstelle Steifigkeitsmatrix'
-        
+
         if (rank == 0) then
             call SYSTEM_CLOCK(endeS,ctrS,ctmS)
             stiffTime = stiffTime + (endeS-startS)/DBLE(ctrS)
@@ -377,9 +372,9 @@ end interface
         call MatAssemblyBegin(KaaS,MAT_FINAL_ASSEMBLY,ierr); CHKERRA(ierr)
         call MatAssemblyEnd  (KaaS,MAT_FINAL_ASSEMBLY,ierr); CHKERRA(ierr)
         if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'Kaas assemble fertig'
-        
+
     end if
-    
+
     !
     ! =================================================================================================
     !
@@ -390,24 +385,24 @@ end interface
         write(fname, '(A10,I4.4,A4)') 'output_sc_', scloop, '.vtk'
 
         call vtkoutprep(fname)                                                                                    ! VTK-Datei öffnen und vorbereiten
-        call vtkoutmesh(fesim) 
+        call vtkoutmesh(fesim)
         call vtkoutelementprop(fesim)                                                                             ! Netz herausschreiben
         if (fesim%ausgabe%outputElemCoord .eq. .true.) call vtkoutelemcoord(fesim)                                ! Herausschreiben der Elementkoordinatensysteme
         if (fesim%ausgabe%outputBoundCond .eq. .true.) call vtkoutfixeddispl(fesim)                               ! Herausschreiben der Randbedingungen (Kräfte, Momente, Nullverschiebungen, Nullrotationen)
-        
+
         if (textoutput .eq. .true.) write(*,*) 'ENDE  - Schreibe Modell als VTK'
     end if
 
     if (rank == 0) call SYSTEM_CLOCK(startL,ctrL,ctmL)
-    
+
     if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'START - Initialisiere Vektoren'
     call init_vectors (fesim%internals%dim_dof, FaS, UaS)
     if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'ENDE  - Initialisiere Vektoren'
-        
+
     if (rank == 0) then
 
         call aero_coupling(textoutput, fesim, scloop, cdi)
-    
+
         if (textoutput .eq. .true.) write(*,*) 'START - Erstelle Lastvektor'
         allocate(Fout(fesim%num_dof))
         call load_get_loadvector(fesim, FaS, Fout, scloop)
@@ -422,7 +417,7 @@ end interface
             write(*,'(A41,I10)')   'maximale Anzahl an Freiheiten           :', fesim%num_dof
             write(*,'(A41,I10)')   'Anzahl an Freiheiten                    :', fesim%internals%dim_dof
         endif
-    
+
     end if
 
     if (rank == 0 .and. ((fesim%is_aeroload2d .eq. .true.) .or. (fesim%is_aeroload3d .eq. .true.))) then
@@ -430,13 +425,13 @@ end interface
         call load_remove_aeropressure(fesim)
         if (textoutput .eq. .true.) write(*,*) 'ENDE  - Entferne Aero-Lasten'
     end if
-    
+
     if (rank == 0) then
-        call SYSTEM_CLOCK(endeL,ctrL,ctmL) 
+        call SYSTEM_CLOCK(endeL,ctrL,ctmL)
         lvecTime  = lvecTime + (endeL-startL)/DBLE(ctrL)
     end if
 
-    
+
     if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'FaS assemble'
     call VecAssemblyBegin(FaS,ierr); CHKERRA(ierr);
     call VecAssemblyEnd(FaS,ierr); CHKERRA(ierr);
@@ -474,7 +469,7 @@ end interface
         call KSPDestroy(ksp,ierr); CHKERRA(ierr)
 #endif
     end if
-    
+
     if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'statische Loesung fertig'
 
     if (rank == 0) then
@@ -488,24 +483,24 @@ end interface
     call VecCreate(PETSC_COMM_WORLD,UaSseq,ierr); CHKERRA(ierr)
     call VecSetSizes(UaSseq,PETSC_DECIDE,fesim%internals%dim_dof,ierr); CHKERRA(ierr)
     call VecSetFromOptions(UaSseq,ierr); CHKERRA(ierr)
-    
+
     call VecScatterCreateToZero(UaS, scatter, UaSseq, ierr); CHKERRA(ierr)
-    
+
     call VecScatterBegin(scatter, UaS, UaSseq, INSERT_VALUES, SCATTER_FORWARD, ierr); CHKERRA(ierr)
     call VecScatterEnd  (scatter, UaS, UaSseq, INSERT_VALUES, SCATTER_FORWARD, ierr); CHKERRA(ierr)
-    
+
     call VecScatterDestroy(scatter, ierr); CHKERRA(ierr)
-    
+
     if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) '  Loesungsvektor sammeln fertig'
 
     if (rank == 0) then
-    
+
         ! Neusortieren der Loesung
         allocate(Utot(fesim%num_dof))
-    
+
         call sol1_get_Utot(fesim, Utot, UaSseq)
-        
-        if (textoutput .eq. .true.) write(*,*) 'Verschiebungsvektor fertig'         
+
+        if (textoutput .eq. .true.) write(*,*) 'Verschiebungsvektor fertig'
 
         if ((fesim%is_aeroload2d .eq. .true.) .or. (fesim%is_aeroload3d .eq. .true.)) then
             call printdisplacements(fesim,scloop,Utot)
@@ -526,36 +521,36 @@ end interface
         ! =================================================================================================
         !
         ! Output static solution
-        
+
         call sol1_output_control(fesim,Utot,scloop,cdi,aeroConverged)
         !
         if (fesim%ausgabe%outputUser .eq. .true.) then
             call sol1_output_user(fesim,Utot,Fout,scloop,cdi,aeroConverged)
         end if
     end if
-    
+
     if (fesim%calculateReactForce .EQ. .TRUE.) then
         call sol1_reaction_forces(fesim, Utot, Fout, rank)
     end if
-        
+
     if (rank == 0) then
         if (fesim%ausgabe%outputUser .eq. .true. .or. fesim%calculateReactForce .eq. .true.) then
             deallocate(Fout)
         end if
-        
+
         if (scloop .LT. fesim%num_subcases) then
             if (fesim%lasten%subcases(scloop+1)%upgeom .eq. .true.) then
                 call update_geometry(fesim,Utot)
             end if
         end if
-        
+
         if (fesim%sol == 1) deallocate(Utot)
     end if
-! 
+!
     call VecDestroy(UaSseq,ierr); CHKERRA(ierr)
     call VecDestroy(FaS,ierr); CHKERRA(ierr)
     call VecDestroy(UaS,ierr); CHKERRA(ierr)
-    
+
     if (scloop .LT. fesim%num_subcases) then
         if (fesim%lasten%subcases(scloop+1)%upgeom .eq. .true.) then
             call bcast_knoten(fesim%knoten,.true.)
@@ -569,12 +564,12 @@ end interface
     !
 
     if (fesim%sol == 2) then
-    
+
       if (fesim%is_multistep .eq. .true.) then
           write(*,*) 'Im Falle einer Multisteprechnung sind Stabilitätsbetrachtungen nicht möglich'
           stop
       end if
-      
+
       call MPI_Bcast (fesim%internals%failed, 1, MPI_LOGICAL, 0, PETSC_COMM_WORLD, ierr); CHKERRA(ierr)
 
       if ((fesim%skipFailed .EQ. .TRUE. .AND. fesim%internals%failed .EQ. .TRUE.) .OR. fesim%lasten%subcases(scloop)%skipBuckling .EQ. .TRUE.) then
@@ -602,15 +597,15 @@ end interface
         if (textoutput .eq. .true. .and. rank .eq. 0) WRITE(*,*) 'START - Erstelle geometrische Steifigkeitsmatrix'
         if (rank == 0) call sol2_get_geometric_stiffness_matrix(fesim, scloop, KgaaS, Utot(:))
         if (textoutput .eq. .true. .and. rank .eq. 0) WRITE(*,*) 'ENDE  - Erstelle geometrische Steifigkeitsmatrix'
-        
+
         if (textoutput .eq. .true. .and. rank .eq. 0) WRITE(*,*) 'START - MPI Assemblieren der geometrischen Steifigkeitsmatrix'
         call MatAssemblyBegin(KgaaS,MAT_FINAL_ASSEMBLY,ierr); CHKERRA(ierr)
         call MatAssemblyEnd  (KgaaS,MAT_FINAL_ASSEMBLY,ierr); CHKERRA(ierr)
         if (textoutput .eq. .true. .and. rank .eq. 0) WRITE(*,*) 'ENDE  - MPI Assemblieren der geometrischen Steifigkeitsmatrix'
-        
+
         !call sol2_solve_condensed_problem (rank,fesim,ksp,KaaS,KgaaS,scloop)
         !STOP
-        
+
         if (rank == 0) call SYSTEM_CLOCK(start,ctr,ctm)
         call sol2_solve(eps, ksp, KaaS, KgaaS, fesim%numEigVal)
         if (rank == 0) then
@@ -620,14 +615,14 @@ end interface
         if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'Eigenwertproblem geloest'
         call EPSGetConverged(eps,nconv,ierr); CHKERRA(ierr)
 
-        if (rank == 0) then  
+        if (rank == 0) then
             allocate(eigvals(nconv))
             allocate(eigenvectors(fesim%internals%dim_dof,nconv))
         else
             allocate(eigvals(1))
             allocate(eigenvectors(1,1))
         end if
-        
+
         if (textoutput .eq. .true. .and. rank .eq. 0) WRITE(*,*) 'START - Extrahieren der Eigenwerte'
         call sol2_extract_eigenvalues(eps, eigvals, eigenvectors, nconv, fesim%internals%dim_dof, rank)
         if (textoutput .eq. .true. .and. rank .eq. 0) WRITE(*,*) 'ENDE  - Extrahieren der Eigenwerte'
@@ -638,35 +633,35 @@ end interface
         deallocate(eigenvectors)
         call EPSDestroy(eps,ierr); CHKERRA(ierr)
         call MatDestroy(KgaaS,ierr); CHKERRA(ierr)
-      
+
       end if
-        
+
       if (rank == 0) deallocate(Utot)
-  
+
       if (scloop .LT. fesim%num_subcases) then
         if (fesim%lasten%subcases(scloop+1)%upmats .eq. .true.) then
           call MatDestroy(KaaS,ierr); CHKERRA(ierr)
-      
+
           if (allocated(d_nzz_kgeo) .eq. .true.) deallocate(d_nzz_kgeo)
           if (allocated(o_nzz_kgeo) .eq. .true.) deallocate(o_nzz_kgeo)
 
-#ifdef mod_slepc                
+#ifdef mod_slepc
           call KSPDestroy(ksp,ierr); CHKERRA(ierr)
 #endif
         end if
       else
         call MatDestroy(KaaS,ierr); CHKERRA(ierr)
-        
+
         if (allocated(d_nzz_kgeo) .eq. .true.) deallocate(d_nzz_kgeo)
         if (allocated(o_nzz_kgeo) .eq. .true.) deallocate(o_nzz_kgeo)
 
-#ifdef mod_slepc            
+#ifdef mod_slepc
         call KSPDestroy(ksp,ierr); CHKERRA(ierr)
 #endif
       end if
-!         
+!
     end if
-#ifdef video      
+#ifdef video
     if (rank == 0) call vtkoutend()
     if (aeroConverged .eq. .true. .and. moved .eq. .false.) then
 !       moved = .true.
@@ -681,24 +676,24 @@ end interface
     else
         deallocate(fesim%internals%num_dof_vec)
     end if
-    
+
   end do ! Ende der Multistepschleife
 
 
   if (rank == 0) then
     call writeCompTime(compTime,solvTime,solvEigTime,initTime,stiffTime,lvecTime)
   end if
-      
+
   if (allocated(d_nzz_kgeo) .eq. .true.) deallocate(d_nzz_kgeo)
   if (allocated(o_nzz_kgeo) .eq. .true.) deallocate(o_nzz_kgeo)
 
   call free_globals()
   call free_mem_fesim(fesim)
- 
+
   call SlepcFinalize(ierr); CHKERRA(ierr)
 
 
 ! call SYSTEM_CLOCK(ende,ctr,ctm)
-! 
+!
 ! WRITE(*,*) 'Verwendete Zeit (s): ', (ende-start)/dble(ctr)
 END PROGRAM FiPPS

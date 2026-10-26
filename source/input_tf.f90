@@ -2037,13 +2037,6 @@ if (fesim%is_mat_thermal_td) then
                 goto 9999
             end if
 
-            if (fesim%thermal%materials_td(ii)%k%n < 2) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'At least 2 temperature/conductivity pairs are required for material', ii
-                err_code=1
-                goto 9999
-            end if
-
             do jj=1,fesim%thermal%materials_td(ii)%k%n
                 if (fesim%thermal%materials_td(ii)%k%value(jj) <= 0.d0) then
                     write(*,*) 'Error reading file ', fname

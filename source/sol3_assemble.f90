@@ -69,8 +69,10 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
   Mat                               :: PermutMat
   IS                                :: is_free, is_bc
   PetscErrorCode                    :: ierr
+  PetscViewer :: viewer
 ! Internal other
   integer                           :: err_code=0
+  logical                           :: write=.TRUE.
 !
 ! =================================================================================================
 !
@@ -135,17 +137,36 @@ end interface
 ! Get Q, Qf-Vectors
   call sol3_get_q_vec(fesim,Q)
   call VecGetSubVector(Q,is_free,Qf,ierr); CHKERRQ(ierr)
+  call VecGetSubVector(Q,is_bc,Qc,ierr); CHKERRQ(ierr)
 ! Get T, Tc-Vectors
   call sol3_get_t_vec(fesim,T)
+  call VecGetSubVector(T,is_free,Tf,ierr); CHKERRQ(ierr)
   call VecGetSubVector(T,is_bc,Tc,ierr); CHKERRQ(ierr)
+
+! Write the Matrices and Vectors, if requested
+  if (write) then
+     write(*,*) 'Schreibe thermische Matrizen aus'
+     call MatView(C, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+     call PetscViewerASCIIOpen(PETSC_COMM_WORLD, 'Cff.txt', viewer, ierr); CHKERRQ(ierr)
+     call MatView(Cff, viewer, ierr); CHKERRQ(ierr)
+     call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
+     call MatView(Cfc, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+     call MatView(Ccf, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+     call MatView(Ccc, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+
+     call VecView(Q, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+     call VecView(Qf, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+     call VecView(Qc, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+     call VecView(T, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+     call VecView(Tf, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+     call VecView(Tc, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+  end if
 ! Cleanup
-  call ISDestroy(is_free, ierr); CHKERRQ(ierr)
-  call ISDestroy(is_bc,   ierr); CHKERRQ(ierr)
-  call MatDestroy(C,ierr); CHKERRQ(ierr)
-  call MatDestroy(Ccf,ierr); CHKERRQ(ierr)
-  call MatDestroy(Ccc,ierr); CHKERRQ(ierr)
-  call VecDestroy(Q,ierr); CHKERRQ(ierr)
-  call VecDestroy(T,ierr); CHKERRQ(ierr)
+  call ISDestroy(is_free,   ierr); CHKERRQ(ierr)
+  call ISDestroy(is_bc,     ierr); CHKERRQ(ierr)
+  call MatDestroy(C,        ierr); CHKERRQ(ierr)
+  call VecDestroy(Q,        ierr); CHKERRQ(ierr)
+  call VecDestroy(T,        ierr); CHKERRQ(ierr)
 
 ! =================================================================================================
 !

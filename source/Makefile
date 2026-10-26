@@ -126,13 +126,6 @@ init_matrices.o \
 init_vectors.o \
 init_elem_proc_dist.o \
 sol1_get_stiffness_matrices.o \
-sol3_assemble.o \
-sol3_get_dof_is.o\
-sol3_get_q_vec.o\
-sol3_get_t_vec.o\
-sol3_set_thermal_dof_map.o \
-sol3_tsolid20_cond.f90\
-sol3_tsolid20_cond_control.f90\
 load_get_loadvector.o \
 sol1_solve.o \
 sol1_calculate_tse.o \
@@ -182,7 +175,7 @@ all: $(PROGRAM)
 
 $(PROGRAM): kompilieren move
 
-kompilieren:
+kompilieren: 
 	-${FLINKER} -o $(PROGRAM) $(FIPPS2_LIB) $(APAME_LIB) $(PANEL2D_LIB) $(XFOILWRAPPER_LIB) ${SLEPC_LIB} -L../include/ -lmodule -L../ -luseroutput
 
 move:
