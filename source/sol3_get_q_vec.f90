@@ -34,6 +34,7 @@ subroutine sol3_get_q_vec(fesim,q)
 use fesimulation_typen
 #include "petsc/finclude/petscvec.h"
 use petscvec
+#include "petsc/finclude/petscmat.h"
 use petscmat
 use globale_variablen
 use konstanten

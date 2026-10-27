@@ -37,6 +37,7 @@ subroutine sol3_tsolid20_cond_control(fesim,C)
 ! Use
 !
 use fesimulation_typen
+use globale_variablen
 !
 ! =================================================================================================
 !
@@ -82,11 +83,13 @@ Mat,intent(out)                 :: C !< C
 !
 ! Internal
 !
-integer, dimension(20)             :: node_ids
+integer, dimension(20)              :: node_ids
 double precision, dimension(20,3)   :: node_coords
 double precision, dimension(20,20)  :: tsolid20_C
 
-integer                             :: ii,jj, kk,ll,e,lsolid20Num,elemNum,nnodes_per_elem
+integer                             :: ii,jj, kk,ll,e,lsolid20Num,elemNum
+PetscInt                            :: nnodes_per_elem,nnodes_global
+PetscInt, allocatable               :: d_nnz(:), o_nnz(:)
 integer                             :: err_code=0
 integer                             :: pid, tmidid
 type(thermal_curve_type)            :: k
@@ -98,6 +101,10 @@ PetscErrorCode                      :: ierr
 !
 ! Initialisation
 nnodes_per_elem=20
+nnodes_global = size(fesim%knoten%nodes)
+allocate(d_nnz(nnodes_global), o_nnz(nnodes_global))
+d_nnz = 10
+o_nnz = 10
 !
 !
 ! =================================================================================================
@@ -107,17 +114,20 @@ nnodes_per_elem=20
  call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
 
 ! Create global conductivity matrix C
- call MatCreateAIJ( PETSC_COMM_WORLD,           &
-                    PETSC_DECIDE, PETSC_DECIDE, &
-                    nglobal, nglobal,           &
-                    32, PETSC_NULL_INTEGER,     &
-                    32, PETSC_NULL_INTEGER,     &
-                    C, ierr)
+call MatCreateAIJ(PETSC_COMM_WORLD, &
+                  PETSC_DECIDE, PETSC_DECIDE, &
+                  nnodes_global, nnodes_global, &
+                  10, d_nnz, &
+                  10, o_nnz, &
+                  C, ierr); CHKERRQ(ierr)
+call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr); CHKERRQ(ierr)
+call MatSetOption(C, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE, ierr); CHKERRQ(ierr)
+call MatSetOption(C, MAT_ROW_ORIENTED, PETSC_FALSE, ierr); CHKERRQ(ierr)
 
 ! Iter through all the elements
  do jj = 1,size(fesim%elemente%lsolid20s,1)
     if (mpi_lsolid20_proc_dist(jj) .NE. rank) cycle
-
+    lsolid20Num = fesim%elemente%lsolid20s(jj)%eid
     pid = fesim%elemente%lsolid20s(jj)%pid ! PropertyID des Elements
     tmidid = 0 ! ID des Thermischen Materials initialisieren
     ! Wärmeleitkoeffizientenkurve holen
@@ -151,14 +161,14 @@ nnodes_per_elem=20
     end do
 
     ! Get local tsolid20_C-Matrix
-    call sol3_tsolid20_cond(fesim,node_coords,node_ids,tsolid20Num,elemNum,k,tsolid20_C)
-    ! Assemble
-    call MatSetValues(  C,20,node_ids-1,20,node_ids-1,tsolid20_C(1:20,1:20),ADD_VALUES,ierr)
+    call sol3_tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
+    call MatSetValues(C,20,node_ids-1,20,node_ids-1,tsolid20_C,ADD_VALUES,ierr); CHKERRQ(ierr)
  end do
 
 ! Finalize global assembly
  call MatAssemblyBegin(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
  call MatAssemblyEnd(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
+ write(*,*) C
 !
 ! =================================================================================================
 !

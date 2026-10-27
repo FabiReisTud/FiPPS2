@@ -124,11 +124,17 @@ end interface
 ! Calculation
 
 ! Set the thermal_dof_map
+  write(*,*) 'Starting the setting thermal dof map'
   call sol3_set_thermal_dof_map(fesim)
+  write(*,*) 'Setting of the thermal dof map finished'
 ! Get index sets for free and constrained dofs
+  write(*,*) 'Starting the getting of the dof index set'
   call sol3_get_dof_is(fesim,is_free,is_bc)
+  write(*,*) 'Finished the getting of the dof index set'
 ! Assemble C-Matrix
+  write(*,*) 'Starting the assembly of the global conduction matrix'
   call sol3_tsolid20_cond_control(fesim,C)
+  write(*,*) 'Finished the assembly of the global conduction matrix'
 ! Get C-submatrices
   call MatCreateSubMatrix(C, is_free, is_free, MAT_INITIAL_MATRIX, Cff, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
@@ -145,21 +151,44 @@ end interface
 
 ! Write the Matrices and Vectors, if requested
   if (write) then
-     write(*,*) 'Schreibe thermische Matrizen aus'
-     call MatView(C, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
-     call PetscViewerASCIIOpen(PETSC_COMM_WORLD, 'Cff.txt', viewer, ierr); CHKERRQ(ierr)
-     call MatView(Cff, viewer, ierr); CHKERRQ(ierr)
-     call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
-     call MatView(Cfc, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
-     call MatView(Ccf, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
-     call MatView(Ccc, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+    write(*,*) 'Starting export of thermal matrices and vectors'
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'C.txt', viewer, ierr)
+    call MatView(C, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
 
-     call VecView(Q, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
-     call VecView(Qf, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
-     call VecView(Qc, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
-     call VecView(T, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
-     call VecView(Tf, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
-     call VecView(Tc, PETSC_VIEWER_STDOUT_WORLD, ierr); CHKERRQ(ierr)
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Cff.txt', viewer, ierr)
+    call MatView(Cff, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Cfc.txt', viewer, ierr)
+    call MatView(Cfc, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Ccf.txt', viewer, ierr)
+    call MatView(Ccf, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Ccc.txt', viewer, ierr)
+    call MatView(Ccc, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tf.txt', viewer, ierr)
+    call VecView(Tf, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tc.txt', viewer, ierr)
+    call VecView(Tc, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Qf.txt', viewer, ierr)
+    call VecView(Qf, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Qc.txt', viewer, ierr)
+    call VecView(Qc, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    write(*,*) 'Finished export of thermal matrices and vectors'
   end if
 ! Cleanup
   call ISDestroy(is_free,   ierr); CHKERRQ(ierr)

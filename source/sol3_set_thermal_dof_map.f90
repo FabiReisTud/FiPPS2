@@ -52,7 +52,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
 ! Output
 ! Internal other
   integer                           :: ii,jj,ll,nn
-  integer                           :: err_code
+  integer                           :: err_code = 0
   integer,dimension(8)              :: node_ids
 !
 ! =================================================================================================
@@ -68,7 +68,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
  allocate(fesim%internals%thermal_dof_map(nn,4))
  do ii=1,nn
     fesim%internals%thermal_dof_map(ii,1) = fesim%knoten%nodes(ii)%nid
-    fesim%internals%thermal_dof_map(ii,2) = 0. ! No BC has been assigned yet
+    fesim%internals%thermal_dof_map(ii,2) = 0.d0 ! No BC has been assigned yet
  end do
 
  ! 12. Loop over all thermal boundary conditions, assign values to the row in thermal_dof_map if assigned

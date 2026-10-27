@@ -122,7 +122,6 @@ do ii=1,N
     ! Wärmeleitungskoeffizient über Temperatur am IP holen
     c = thermal_curve_eval(k,T_ip)
 
-
     ! This adds the conduction contributions of all nodes
     ! Get derivates of shape functions with respect to global coordinates
     call hexa20_shapefunctions_x_y_z(xi_ip(ii),eta_ip(ii),zeta_ip(ii),node_coords,dNidx,dNidy,dNidz,detJac,J)
@@ -141,6 +140,7 @@ do kk = 1, 20
         tsolid20_C(jj,kk) = tsolid20_C(kk,jj)
     end do
 end do
+
 ! =================================================================================================
 !
 ! Error handling

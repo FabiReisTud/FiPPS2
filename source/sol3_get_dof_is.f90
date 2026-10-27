@@ -34,8 +34,8 @@ subroutine sol3_get_dof_is(fesim,is_free,is_bc)
 !
 ! Include
 !
-#include "petsc/finclude/petscksp.h"
-  use petscksp
+#include "petsc/finclude/petscis.h"
+  use petscis
   use fesimulation_typen
   use internals_typen
 !
@@ -62,7 +62,7 @@ subroutine sol3_get_dof_is(fesim,is_free,is_bc)
   nfree = 0
   nbc   = 0
   do ii = 1, size(fesim%internals%thermal_dof_map, dim=1)
-     if (fesim%internals%thermal_dof_map(ii,1) == 0) then
+     if (fesim%internals%thermal_dof_map(ii,2) == 0.d0) then
         nfree = nfree + 1
      else
         nbc   = nbc + 1
@@ -74,15 +74,14 @@ subroutine sol3_get_dof_is(fesim,is_free,is_bc)
   nfree = 0
   nbc   = 0
   do ii = 1, size(fesim%internals%thermal_dof_map, dim=1)
-     if (fesim%internals%thermal_dof_map(ii,1) == 0) then           ! If type is set to 0, that dof is free
+     if (fesim%internals%thermal_dof_map(ii,2) == 0.d0) then           ! If type is set to 0, that dof is free
         nfree = nfree + 1
-        freeList(nfree) = fesim%internals%thermal_dof_map(ii,2) - 1 ! Shift to 0-based PETSc indexing from Node 1-based indices
+        freeList(nfree) = fesim%internals%thermal_dof_map(ii,1) - 1 ! Shift to 0-based PETSc indexing from Node 1-based indices
      else
         nbc = nbc + 1
-        bcList(nbc)     = fesim%internals%thermal_dof_map(ii,2) - 1 ! Shift to 0-based PETSc indexing from Node 1-based indices
+        bcList(nbc)     = fesim%internals%thermal_dof_map(ii,1) - 1 ! Shift to 0-based PETSc indexing from Node 1-based indices
      end if
   end do
-
   call ISCreateGeneral(PETSC_COMM_WORLD, nfree, freeList, PETSC_COPY_VALUES, is_free, ierr); CHKERRQ(ierr)
   call ISCreateGeneral(PETSC_COMM_WORLD, nbc,   bcList,   PETSC_COPY_VALUES, is_bc,   ierr); CHKERRQ(ierr)
 

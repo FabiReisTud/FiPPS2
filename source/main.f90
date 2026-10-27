@@ -182,6 +182,9 @@ end interface
   character(198)                                        :: buf
 
   double precision, dimension(:), allocatable           :: Fout         ! Kraftvektor mit allen Freiheiten, wobei alle Kraftewerte im globalen System sind
+! ! Thermal matrices and vectors
+  Vec                                                   :: Tf,Tc,Qf,Qc
+  Mat                                                   :: Cff,Cfc
 !
 ! =================================================================================================
 !
@@ -272,9 +275,10 @@ end interface
   ! =================================================================================================
   !
   ! Steady state thermal solution solution
-
     if (fesim%thermal%enabled) then
-        call sol3_assemble
+        write(*,*) 'Starting sol3_assemble'
+        call sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
+        write(*,*) 'Finished sol3_assemble'
     end if
 
 
