@@ -98,14 +98,7 @@ do ii=1,N
     ! Get the weight of the integration point
     weight = w_xi(ii)*w_eta(ii)*w_zeta(ii)
 
-    ! check if Element is malformed
-    if (detJac < 0.d0) then
-       write(*,*) 'for lsolid20 number:                  ', lsolid20Num
-       write(*,*) 'element number:                       ', elemNum
-       write(*,*) 'negative determinant of the jacobian: ', detJac
-       err_code = 2
-       goto 9999
-     end if
+
 
     ! Temperatur an IP über Quadratur holen, falls ein Temperaturfeld bereits berechnet wurde
     if (allocated(fesim%thermal%temperature)) then
@@ -125,22 +118,33 @@ do ii=1,N
     ! This adds the conduction contributions of all nodes
     ! Get derivates of shape functions with respect to global coordinates
     call hexa20_shapefunctions_x_y_z(xi_ip(ii),eta_ip(ii),zeta_ip(ii),node_coords,dNidx,dNidy,dNidz,detJac,J)
+    ! check if Element is malformed
+    if (detJac < 0.d0) then
+       write(*,*) 'for lsolid20 number:                  ', lsolid20Num
+       write(*,*) 'element number:                       ', elemNum
+       write(*,*) 'negative determinant of the jacobian: ', detJac
+       err_code = 2
+       goto 9999
+    end if
+
     ! Loop over all nodes
     do kk = 1,20   ! node associated with row block
-        do jj = 1,kk ! node associated with column block, only until kk, as upper third of stiffness is later simply mirrored
+        do jj = 1,kk ! node associated with column block, only until kk, as upper third of conduction matrix is later simply mirrored
             ! Hinzufügen des Knotenanteils zur Leitungsmatrix
-            tsolid20_C(jj,kk) = tsolid20_C(jj,kk) + c * weight * dNidx(jj)*dNidx(kk) + dNidy(jj)*dNidy(kk) + dNidz(jj)*dNidz(kk)
+            tsolid20_C(jj,kk) = tsolid20_C(jj,kk) + c*weight*dNidx(jj)*dNidx(kk) + c*weight*dNidy(jj)*dNidy(kk) + c*weight*dNidz(jj)*dNidz(kk)
         end do
     end do
 end do
 
-! The integrand is symmetric; mirror the computed lower triangle.
+! Remove veeeery small values (<1e-10) and mirror matrix
 do kk = 1, 20
     do jj = 1, kk-1
-        tsolid20_C(jj,kk) = tsolid20_C(kk,jj)
+        if (abs(tsolid20_C(jj,kk))<1e-10) then
+            tsolid20_C(jj,kk) = 0.d0
+        end if
+        tsolid20_C(kk,jj) = tsolid20_C(jj,kk)
     end do
 end do
-
 ! =================================================================================================
 !
 ! Error handling

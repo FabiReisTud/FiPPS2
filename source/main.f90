@@ -275,10 +275,12 @@ end interface
   ! =================================================================================================
   !
   ! Steady state thermal solution solution
-    if (fesim%thermal%enabled) then
+    if (fesim%thermal%enabled .and. rank .eq. 0) then
+        ! Assemble matrices
         write(*,*) 'Starting sol3_assemble'
         call sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
         write(*,*) 'Finished sol3_assemble'
+        !
     end if
 
 

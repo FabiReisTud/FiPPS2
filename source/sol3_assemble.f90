@@ -151,6 +151,17 @@ end interface
 
 ! Write the Matrices and Vectors, if requested
   if (write) then
+    ! Export is_bc
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'IS_bc.txt', viewer, ierr)
+    call ISView(is_bc,viewer,ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    ! Export is_free
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'IS_free.txt', viewer, ierr)
+    call ISView(is_free,viewer,ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    ! Matrices and vectors
     write(*,*) 'Starting export of thermal matrices and vectors'
     call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'C.txt', viewer, ierr)
     call MatView(C, viewer, ierr)

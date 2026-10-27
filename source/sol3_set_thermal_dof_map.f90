@@ -68,12 +68,13 @@ subroutine sol3_set_thermal_dof_map(fesim)
  allocate(fesim%internals%thermal_dof_map(nn,4))
  do ii=1,nn
     fesim%internals%thermal_dof_map(ii,1) = fesim%knoten%nodes(ii)%nid
-    fesim%internals%thermal_dof_map(ii,2) = 0.d0 ! No BC has been assigned yet
+    fesim%internals%thermal_dof_map(ii,2:4) = 0.d0 ! No BC has been assigned yet
  end do
 
  ! 12. Loop over all thermal boundary conditions, assign values to the row in thermal_dof_map if assigned
  ! 121. Loop over temperature BCs
  do ii=1,size(fesim%thermal%tbcs)
+    ll=0
     ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(fesim%thermal%tbcs(ii)%nid),dim=1) ! Find index of nid in thermal_dof_map
     if (ll == 0) then
         write(*,*) 'NID ',fesim%thermal%tbcs(ii)%nid,' from TemperatureBC could not be found in thermal_dof_map!'
@@ -97,6 +98,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
     node_ids(8) = fesim%thermal%fluxes(ii)%nid8
 
     do jj=1,8
+        ll=0
         ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(node_ids(jj)),dim=1)   ! Find index of nid in thermal_dof_map
         if (ll == 0) then
             write(*,*) 'NID ',node_ids(jj),' from fluxBc could not be found in thermal_dof_map!'
@@ -131,6 +133,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
     node_ids(8) = fesim%thermal%convections(ii)%nid8
 
     do jj=1,8
+        ll=0
         ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(node_ids(jj)),dim=1)   ! Find index of nid in thermal_dof_map
         if (ll == 0) then
             write(*,*) 'NID ',node_ids(jj),' from convectionBc could not be found in thermal_dof_map!'
@@ -156,6 +159,7 @@ subroutine sol3_set_thermal_dof_map(fesim)
  end do
  ! 124. Loop over MPCs
  do ii=1,size(fesim%randbedingungen%mpcs)
+    ll=0
     ll = findloc(fesim%internals%thermal_dof_map(:,1),dble(fesim%randbedingungen%mpcs(ii)%dependend%nid),dim=1)   ! Find index of nid in thermal_dof_map
     if (ll == 0) then
         write(*,*) 'NID ',fesim%randbedingungen%mpcs(ii)%dependend%nid,' from MPCID: ',fesim%randbedingungen%mpcs(ii)%sid,' could not be found in thermal_dof_map!'

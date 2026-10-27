@@ -168,7 +168,6 @@ call MatSetOption(C, MAT_ROW_ORIENTED, PETSC_FALSE, ierr); CHKERRQ(ierr)
 ! Finalize global assembly
  call MatAssemblyBegin(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
  call MatAssemblyEnd(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
- write(*,*) C
 !
 ! =================================================================================================
 !
