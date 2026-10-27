@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 !
 !> @details
 !
-!> @author 
+!> @author
 !
 !> $Id: sol1_solve.f90 484 2024-10-18 14:28:29Z s1080304 $
 !> $Author: s1080304 $
@@ -61,11 +61,11 @@ use fesimulation_typen
   Mat                                   :: mat
   Vec                                   :: u
   Vec                                   :: f
-  
+
   KSP                                   :: ksp
   PetscErrorCode                        :: ierr
   PC                                    :: prec
-  
+
   integer                               :: err_code=0
 !
 ! =================================================================================================
@@ -82,13 +82,13 @@ use fesimulation_typen
   if (fesim%lasten%subcases(scloop)%upmats .eq. .true.) then
     call KSPCreate(PETSC_COMM_WORLD,ksp,ierr); CHKERRQ(ierr)
     call KSPSetOperators(ksp,K,K,ierr); CHKERRQ(ierr)
-    
+
     call KSPSetType(ksp,KSPPREONLY,ierr); CHKERRQ(ierr)
     call KSPGetPC(ksp,prec,ierr); CHKERRQ(ierr)
     call PCSetType(prec,PCCHOLESKY,ierr); CHKERRQ(ierr)
     call PCFactorSetMatSolverType(prec,MATSOLVERMUMPS,ierr); CHKERRQ(ierr)
     call PCFactorSetUpMatSolverType(prec,ierr); CHKERRQ(ierr) ! notwendig, um die Methode MatMumpsSetIcntl ohne Fehler aufrufen zu können
-    
+
     call KSPSetErrorIfNotConverged(ksp,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
     call PCSetErrorIfFailure(prec,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
 !    call PCFactorGetMatrix(prec,mat,ierr); CHKERRQ(ierr) ! notwendig für die nachfolgende Methode
@@ -96,7 +96,7 @@ use fesimulation_typen
 
     call KSPSetFromOptions(ksp,ierr); CHKERRQ(ierr)
   end if
- 
+
  ! Solution
  ! KSPSolve(ksp, right-hand-side-vector, solution vector)
   if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'Loesen des Gleichungssystems'
@@ -104,22 +104,22 @@ use fesimulation_typen
   if (textoutput .eq. .true. .and. rank .eq. 0) write(*,*) 'Lastfall ', scloop, ' geloest.'
 
 !  call KSPDestroy(ksp,ierr); CHKERRQ(ierr)
-  
+
 !
 ! =================================================================================================
 !
 ! Error handling
-!  
+!
 9999 continue
 
   if (err_code /= 0) then
-   
+
     write(*,*)                      'An error occured in subroutine'
     write(*,*)                      'sol1_solve'
     write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
     write(*,*)                      'exit program '
     stop
-   
+
   end if
 
 end subroutine sol1_solve

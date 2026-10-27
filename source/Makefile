@@ -55,6 +55,7 @@ sol3_get_q_vec.o \
 sol3_get_t_vec.o \
 sol3_get_dof_is.o \
 sol3_assemble.o \
+sol3_solve.o \
 assemble_aa.o \
 quad8_stiff.o \
 beam2_get_properties.o \
@@ -182,7 +183,7 @@ all: $(PROGRAM)
 
 $(PROGRAM): kompilieren move
 
-kompilieren: 
+kompilieren:
 	-${FLINKER} -o $(PROGRAM) $(FIPPS2_LIB) $(APAME_LIB) $(PANEL2D_LIB) $(XFOILWRAPPER_LIB) ${SLEPC_LIB} -L../include/ -lmodule -L../ -luseroutput
 
 move:

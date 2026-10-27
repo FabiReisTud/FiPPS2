@@ -69,7 +69,7 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
   Mat                               :: PermutMat
   IS                                :: is_free, is_bc
   PetscErrorCode                    :: ierr
-  PetscViewer :: viewer
+  PetscViewer                       :: viewer
 ! Internal other
   integer                           :: err_code=0
   logical                           :: write=.TRUE.
@@ -181,10 +181,6 @@ end interface
 
     call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Ccc.txt', viewer, ierr)
     call MatView(Ccc, viewer, ierr)
-    call PetscViewerDestroy(viewer, ierr)
-
-    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tf.txt', viewer, ierr)
-    call VecView(Tf, viewer, ierr)
     call PetscViewerDestroy(viewer, ierr)
 
     call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tc.txt', viewer, ierr)

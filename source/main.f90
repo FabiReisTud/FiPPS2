@@ -280,7 +280,10 @@ end interface
         write(*,*) 'Starting sol3_assemble'
         call sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
         write(*,*) 'Finished sol3_assemble'
-        !
+        ! Solve Matrices
+        write(*,*) 'Starting thermal solve'
+        call sol3_solve(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
+        write(*,*) 'Finished thermal solve'
     end if
 
 
