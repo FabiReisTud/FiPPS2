@@ -38,7 +38,7 @@
 !
 ! =================================================================================================
 
-subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
+subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc,is_free,is_bc)
 !
 ! =================================================================================================
 !
@@ -63,11 +63,11 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
 ! Output
   Mat, intent(out)                  :: Cff, Cfc
   Vec, intent(out)                  :: Tf,Tc,Qf,Qc
+  IS, intent(out)                   :: is_free, is_bc
 ! Internal Vectors/Matrices
   Mat                               :: C, Ccf, Ccc
   Vec                               :: T,Q
   Mat                               :: PermutMat
-  IS                                :: is_free, is_bc
   PetscErrorCode                    :: ierr
   PetscViewer                       :: viewer
 ! Internal other
@@ -198,12 +198,11 @@ end interface
     write(*,*) 'Finished export of thermal matrices and vectors'
   end if
 ! Cleanup
-  call ISDestroy(is_free,   ierr); CHKERRQ(ierr)
-  call ISDestroy(is_bc,     ierr); CHKERRQ(ierr)
-  call MatDestroy(C,        ierr); CHKERRQ(ierr)
-  call VecDestroy(Q,        ierr); CHKERRQ(ierr)
-  call VecDestroy(T,        ierr); CHKERRQ(ierr)
-
+  call MatDestroy(C, ierr); CHKERRQ(ierr)
+  call VecDestroy(Q, ierr); CHKERRQ(ierr)
+  call VecDestroy(T, ierr); CHKERRQ(ierr)
+  call MatDestroy(Ccf, ierr); CHKERRQ(ierr)
+  call MatDestroy(Ccc, ierr); CHKERRQ(ierr)
 ! =================================================================================================
 !
 ! Error handling

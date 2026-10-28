@@ -185,6 +185,7 @@ end interface
 ! ! Thermal matrices and vectors
   Vec                                                   :: Tf,Tc,Qf,Qc
   Mat                                                   :: Cff,Cfc
+  IS                                                    :: is_free,is_bc
 !
 ! =================================================================================================
 !
@@ -278,12 +279,16 @@ end interface
     if (fesim%thermal%enabled .and. rank .eq. 0) then
         ! Assemble matrices
         write(*,*) 'Starting sol3_assemble'
-        call sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
+        call sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc,is_free,is_bc)
         write(*,*) 'Finished sol3_assemble'
         ! Solve Matrices
         write(*,*) 'Starting thermal solve'
         call sol3_solve(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
         write(*,*) 'Finished thermal solve'
+        ! Output to VTK
+        write(*,*) 'Starting thermal output to vtk'
+        !call sol3_output_vtk(fesim,Tf,Tc,is_free,is_bc)
+        write(*,*) 'Finished thermal output to vtk'
     end if
 
 

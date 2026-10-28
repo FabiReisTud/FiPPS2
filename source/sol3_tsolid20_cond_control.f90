@@ -103,8 +103,8 @@ PetscErrorCode                      :: ierr
 nnodes_per_elem=20
 nnodes_global = size(fesim%knoten%nodes)
 allocate(d_nnz(nnodes_global), o_nnz(nnodes_global))
-d_nnz = 10
-o_nnz = 10
+d_nnz = 60
+o_nnz = 60
 !
 !
 ! =================================================================================================
@@ -121,30 +121,16 @@ call MatCreateAIJ(PETSC_COMM_WORLD, &
                   10, o_nnz, &
                   C, ierr); CHKERRQ(ierr)
 call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr); CHKERRQ(ierr)
-call MatSetOption(C, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE, ierr); CHKERRQ(ierr)
-call MatSetOption(C, MAT_ROW_ORIENTED, PETSC_FALSE, ierr); CHKERRQ(ierr)
+!call MatSetOption(C, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE, ierr); CHKERRQ(ierr)
+!call MatSetOption(C, MAT_ROW_ORIENTED, PETSC_FALSE, ierr); CHKERRQ(ierr)
 
 ! Iter through all the elements
  do jj = 1,size(fesim%elemente%lsolid20s,1)
     if (mpi_lsolid20_proc_dist(jj) .NE. rank) cycle
     lsolid20Num = fesim%elemente%lsolid20s(jj)%eid
     pid = fesim%elemente%lsolid20s(jj)%pid ! PropertyID des Elements
-    tmidid = 0 ! ID des Thermischen Materials initialisieren
-    ! Wärmeleitkoeffizientenkurve holen
-    do kk=1,size(fesim%thermal%propthermals)
-        if (fesim%thermal%propthermals(kk)%propid == pid) then
-            tmidid = fesim%thermal%propthermals(kk)%tmidid ! MatThermalTd gefunden! --> TMIDID speichern!
-            do ll=1,size(fesim%thermal%materials_td)
-                if (fesim%thermal%materials_td(ll)%mid == tmidid) then
-                    k = fesim%thermal%materials_td(ll)%k ! k gefunden! --> Speichern!
-                    exit
-                end if
-            end do
-            if (tmidid .NE. 0) then
-                exit
-            end if
-        end if
-    end do
+    tmidid = fesim%thermal%propthermals(pid)%tmidid ! ID des Thermischen Materials initialisieren
+    k = fesim%thermal%materials_td(tmidid)%k! Wärmeleitkoeffizientenkurve holen
 
     if (tmidid .EQ. 0) then
        write(*,*) 'for lsolid20 number:                  ', lsolid20Num
@@ -169,6 +155,8 @@ call MatSetOption(C, MAT_ROW_ORIENTED, PETSC_FALSE, ierr); CHKERRQ(ierr)
  call MatAssemblyBegin(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
  call MatAssemblyEnd(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
 !
+! Cleanup
+deallocate(d_nnz, o_nnz)
 ! =================================================================================================
 !
 ! Error handling

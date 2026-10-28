@@ -160,6 +160,7 @@ sol1_output_glawi2.o \
 sol1_output_glawi.o \
 sol1_output_sab.o \
 sol1_reaction_forces.o \
+sol3_output_vtk.o \
 \
 main.o \
 

@@ -98,8 +98,6 @@ do ii=1,N
     ! Get the weight of the integration point
     weight = w_xi(ii)*w_eta(ii)*w_zeta(ii)
 
-
-
     ! Temperatur an IP über Quadratur holen, falls ein Temperaturfeld bereits berechnet wurde
     if (allocated(fesim%thermal%temperature)) then
         T_ip = 0.d0
@@ -132,19 +130,22 @@ do ii=1,N
         do jj = 1,kk ! node associated with column block, only until kk, as upper third of conduction matrix is later simply mirrored
             ! Hinzufügen des Knotenanteils zur Leitungsmatrix
             tsolid20_C(jj,kk) = tsolid20_C(jj,kk) + c*weight*dNidx(jj)*dNidx(kk) + c*weight*dNidy(jj)*dNidy(kk) + c*weight*dNidz(jj)*dNidz(kk)
+            if (abs(tsolid20_C(jj,kk))<1e-10) then
+                tsolid20_C(jj,kk) = 0.d0 ! Remove veeeery small values (<1e-10) and
+            end if
         end do
     end do
 end do
 
-! Remove veeeery small values (<1e-10) and mirror matrix
+! mirror matrix
 do kk = 1, 20
     do jj = 1, kk-1
-        if (abs(tsolid20_C(jj,kk))<1e-10) then
-            tsolid20_C(jj,kk) = 0.d0
-        end if
         tsolid20_C(kk,jj) = tsolid20_C(jj,kk)
     end do
 end do
+
+! cleanup
+deallocate(xi_ip,eta_ip,zeta_ip,w_xi,w_eta,w_zeta)
 ! =================================================================================================
 !
 ! Error handling
