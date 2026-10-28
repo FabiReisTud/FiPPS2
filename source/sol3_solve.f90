@@ -67,14 +67,17 @@ logical                             :: write=.TRUE.
 !
 ! Calculation
 
-! Compute the RHS
+! Start the RHS
 call VecDuplicate(Qf, RHS, ierr); CHKERRQ(ierr)
 call VecCopy(Qf, RHS, ierr);     CHKERRQ(ierr)
 RHS = Qf
 
 call MatCreateVecs(Cfc, PETSC_NULL_VEC, RHS2, ierr); CHKERRQ(ierr)
 call MatMult(Cfc,Tc,RHS2, ierr); CHKERRQ(ierr)   ! Multiply Cfc with Tc, save to RHS2
+
+! Finish RHS
 call VecAXPY(RHS,alpha,RHS2, ierr); CHKERRQ(ierr) ! Subtract RHS2 from RHS(==Qf)
+
 
 ! Create linear solver
 call KSPCreate(PETSC_COMM_WORLD,ksp, ierr); CHKERRQ(ierr)
@@ -101,6 +104,13 @@ if (write) then
     call VecView(Tf, viewer, ierr)
     call PetscViewerDestroy(viewer, ierr)
 endif
+
+! Final Cleanup
+call VecDestroy(Qf,ierr); CHKERRQ(ierr)
+call MatDestroy(Cfc,ierr); CHKERRQ(ierr)
+call VecDestroy(RHS2,ierr); CHKERRQ(ierr)
+call MatDestroy(Cff,ierr); CHKERRQ(ierr)
+call KSPDestroy(ksp,ierr); CHKERRQ(ierr)
 
 return
 end subroutine

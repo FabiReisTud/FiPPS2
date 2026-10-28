@@ -36,6 +36,8 @@ subroutine sol3_output_vtk(fesim,Tf,Tc,is_free,is_bc)
 !
 use fesimulation_typen
 use vtk_variablen
+#include "petsc/finclude/petscksp.h"
+  use petscksp
 #include "petsc/finclude/petscvec.h"
 use petscvec
 #include "petsc/finclude/petscis.h"
@@ -54,20 +56,65 @@ IS,intent(in)                       :: is_free,is_bc
 ! Output
 ! Internal
 Vec                                 :: T
-Vec                                 :: Ttemp(2)
-IS                                  :: ISTemp(2)
 PetscErrorCode                      :: ierr
 integer                             :: ii
+PetscViewer                         :: viewer
+PetscInt                            :: size_bc,size_free
+IS                                  :: is_stride_bc, is_stride_free
+VecScatter                          :: scatter_bc, scatter_free
+logical                             :: writee = .TRUE.
 !
 ! =================================================================================================
 !
 ! Calculation
-call VecCreate(PETSC_COMM_WORLD,T,ierr); CHKERRQ(ierr) ! Create T-Vector
+! Create the global vector T
+call VecCreate(PETSC_COMM_SELF, T, ierr); CHKERRQ(ierr)
 call VecSetSizes(T, PETSC_DECIDE, size(fesim%knoten%nodes), ierr); CHKERRQ(ierr)
 call VecSetFromOptions(T, ierr); CHKERRQ(ierr)
-!call VecSet(T, 0.0d0, ierr); CHKERRQ(ierr)
-call VecISCopy(T, is_bc, SCATTER_FORWARD, Tc, ierr); CHKERRQ(ierr)
-call VecISCopy(T, is_free, SCATTER_FORWARD, Tf, ierr); CHKERRQ(ierr)
+
+! Get sizes of ISs
+call ISGetSize(is_bc,size_bc,ierr); CHKERRQ(ierr)
+call ISGetSize(is_free,size_free,ierr); CHKERRQ(ierr)
+! Create stride ISs
+call ISCreateStride(PETSC_COMM_SELF,size_bc  ,0,1,is_stride_bc  ,ierr); CHKERRQ(ierr)
+call ISCreateStride(PETSC_COMM_SELF,size_free,0,1,is_stride_free,ierr); CHKERRQ(ierr)
+
+! Create scatter_bc
+call VecScatterCreate(Tc,is_stride_bc,T,is_bc,scatter_bc,ierr); CHKERRQ(ierr)
+call VecScatterBegin(scatter_bc,Tc,T,INSERT_VALUES,SCATTER_FORWARD,ierr); CHKERRQ(ierr)
+call   VecScatterEnd(scatter_bc,Tc,T,INSERT_VALUES,SCATTER_FORWARD,ierr); CHKERRQ(ierr)
+call VecScatterDestroy(scatter_bc,ierr); CHKERRQ(ierr)
+! Create scatter_free
+call VecScatterCreate(Tf,is_stride_free,T,is_free,scatter_free,ierr); CHKERRQ(ierr)
+call VecScatterBegin(scatter_free,Tf,T,INSERT_VALUES,SCATTER_FORWARD,ierr); CHKERRQ(ierr)
+call   VecScatterEnd(scatter_free,Tf,T,INSERT_VALUES,SCATTER_FORWARD,ierr); CHKERRQ(ierr)
+call VecScatterDestroy(scatter_free,ierr); CHKERRQ(ierr)
+
+! Write
+if (writee) then
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tc2.txt', viewer, ierr); CHKERRQ(ierr)
+    call VecView(Tc, viewer, ierr); CHKERRQ(ierr)
+    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tf2.txt', viewer, ierr); CHKERRQ(ierr)
+    call VecView(Tf, viewer, ierr); CHKERRQ(ierr)
+    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'is_free.txt', viewer, ierr); CHKERRQ(ierr)
+    call ISView(is_free, viewer, ierr); CHKERRQ(ierr)
+    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'is_bc.txt', viewer, ierr); CHKERRQ(ierr)
+    call ISView(is_bc, viewer, ierr); CHKERRQ(ierr)
+    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
+
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'T.txt', viewer, ierr); CHKERRQ(ierr)
+    call VecView(T, viewer, ierr); CHKERRQ(ierr)
+    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
+end if
+
+! Cleanup
+call VecDestroy(T,ierr); CHKERRQ(ierr)
 
 return
 end subroutine

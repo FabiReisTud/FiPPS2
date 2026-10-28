@@ -72,7 +72,7 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc,is_free,is_bc)
   PetscViewer                       :: viewer
 ! Internal other
   integer                           :: err_code=0
-  logical                           :: write=.TRUE.
+  logical                           :: write=.FALSE.
 !
 ! =================================================================================================
 !

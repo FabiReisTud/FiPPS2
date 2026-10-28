@@ -287,8 +287,14 @@ end interface
         write(*,*) 'Finished thermal solve'
         ! Output to VTK
         write(*,*) 'Starting thermal output to vtk'
-        !call sol3_output_vtk(fesim,Tf,Tc,is_free,is_bc)
+        call sol3_output_vtk(fesim,Tf,Tc,is_free,is_bc)
         write(*,*) 'Finished thermal output to vtk'
+        ! Destroy thermal matrix
+        call VecDestroy(Tf, ierr)
+        call VecDestroy(Tc, ierr)
+
+
+
     end if
 
 

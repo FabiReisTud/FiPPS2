@@ -103,8 +103,8 @@ PetscErrorCode                      :: ierr
 nnodes_per_elem=20
 nnodes_global = size(fesim%knoten%nodes)
 allocate(d_nnz(nnodes_global), o_nnz(nnodes_global))
-d_nnz = 60
-o_nnz = 60
+d_nnz = min(200,size(fesim%knoten%nodes))
+o_nnz = d_nnz
 !
 !
 ! =================================================================================================
