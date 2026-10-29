@@ -59,10 +59,11 @@ Vec                                 :: T
 PetscErrorCode                      :: ierr
 integer                             :: ii
 PetscViewer                         :: viewer
-PetscInt                            :: size_bc,size_free
+PetscInt                            :: size_bc,size_free,size_all
 IS                                  :: is_stride_bc, is_stride_free
 VecScatter                          :: scatter_bc, scatter_free
-logical                             :: writee = .TRUE.
+PetscScalar, pointer                :: vec_array(:)
+double precision,allocatable        :: dataT(:)
 !
 ! =================================================================================================
 !
@@ -90,31 +91,18 @@ call VecScatterBegin(scatter_free,Tf,T,INSERT_VALUES,SCATTER_FORWARD,ierr); CHKE
 call   VecScatterEnd(scatter_free,Tf,T,INSERT_VALUES,SCATTER_FORWARD,ierr); CHKERRQ(ierr)
 call VecScatterDestroy(scatter_free,ierr); CHKERRQ(ierr)
 
-! Write
-if (writee) then
-    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tc2.txt', viewer, ierr); CHKERRQ(ierr)
-    call VecView(Tc, viewer, ierr); CHKERRQ(ierr)
-    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
-
-    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tf2.txt', viewer, ierr); CHKERRQ(ierr)
-    call VecView(Tf, viewer, ierr); CHKERRQ(ierr)
-    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
-
-    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'is_free.txt', viewer, ierr); CHKERRQ(ierr)
-    call ISView(is_free, viewer, ierr); CHKERRQ(ierr)
-    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
-
-    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'is_bc.txt', viewer, ierr); CHKERRQ(ierr)
-    call ISView(is_bc, viewer, ierr); CHKERRQ(ierr)
-    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
-
-    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'T.txt', viewer, ierr); CHKERRQ(ierr)
-    call VecView(T, viewer, ierr); CHKERRQ(ierr)
-    call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
-end if
-
-! Cleanup
-call VecDestroy(T,ierr); CHKERRQ(ierr)
+!!!!! Output to VTK
+call vtkoutprep('output_thermal.vtk')               ! VTK-Datei öffnen und vorbereiten
+call vtkoutmesh(fesim)                              ! Write mesh
+! Convert T to an array
+call VecGetSize(T,size_all,ierr); CHKERRQ(ierr)
+allocate(dataT(size_all),vec_array(size_all))
+call VecGetArrayF90(T, vec_array, ierr); CHKERRQ(ierr)
+dataT = vec_array
+! Write dataT to the VTK
+call vtkoutpointscalar(dataT, fesim%num_nodes, 'temperature')
+! Restore
+call VecRestoreArrayF90(T, vec_array, ierr); CHKERRQ(ierr)
 
 return
 end subroutine
