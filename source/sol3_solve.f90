@@ -53,7 +53,7 @@ type(fe_simulation),intent(inout)   :: fesim
 Vec,intent(in)                      :: Qf,Qc,Tc
 Mat,intent(in)                      :: Cff,Cfc
 ! Output
-Vec,intent(out)                     :: Tf
+Vec,intent(inout)                   :: Tf
 ! Internal
 Vec                                 :: RHS,RHS2 ! Right-hand-side
 KSP                                 :: ksp      ! Krylov space
@@ -62,6 +62,8 @@ PetscErrorCode                      :: ierr
 PetscReal                           :: alpha=-1.0, tol=1e-5
 PetscViewer                         :: viewer
 logical                             :: write=.TRUE.
+Vec                                 :: residual
+PetscScalar                         :: rnorm,rhsnorm
 !
 ! =================================================================================================
 !
@@ -77,7 +79,6 @@ call MatMult(Cfc,Tc,RHS2, ierr); CHKERRQ(ierr)   ! Multiply Cfc with Tc, save to
 
 ! Finish RHS
 call VecAXPY(RHS,alpha,RHS2, ierr); CHKERRQ(ierr) ! Subtract RHS2 from RHS(==Qf)
-
 
 ! Create linear solver
 call KSPCreate(PETSC_COMM_WORLD,ksp, ierr); CHKERRQ(ierr)
@@ -98,6 +99,24 @@ call KSPSetFromOptions(ksp,ierr); CHKERRQ(ierr)
 call MatCreateVecs(Cff, PETSC_NULL_VEC, Tf, ierr); CHKERRQ(ierr)
 call KSPSolve(ksp,RHS,Tf, ierr); CHKERRQ(ierr)
 
+! calculate residual
+call MatCreateVecs(Cff, residual, PETSC_NULL_VEC, ierr); CHKERRQ(ierr)
+! residual = Cff * Tf - RHS
+call MatMult(Cff, Tf, residual, ierr); CHKERRQ(ierr)
+call VecAXPY(residual, -1.0d0, RHS, ierr); CHKERRQ(ierr)
+! Compute residual norm
+call VecNorm(residual, NORM_2, rnorm, ierr); CHKERRQ(ierr)
+! Compute RHS norm
+call VecNorm(RHS, NORM_2, rhsnorm, ierr); CHKERRQ(ierr)
+
+if (rhsnorm .gt. 0.0d0) then
+    write(*,*) 'Relative residual = ', rnorm/rhsnorm
+else
+    write(*,*) 'Absolute residual = ', rnorm
+endif
+
+call VecDestroy(residual, ierr); CHKERRQ(ierr)
+
 if (write) then
     ! Export Tf
     call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tf.txt', viewer, ierr)
@@ -106,10 +125,8 @@ if (write) then
 endif
 
 ! Final Cleanup
-call VecDestroy(Qf,ierr); CHKERRQ(ierr)
-call MatDestroy(Cfc,ierr); CHKERRQ(ierr)
+call VecDestroy(RHS,ierr); CHKERRQ(ierr)
 call VecDestroy(RHS2,ierr); CHKERRQ(ierr)
-call MatDestroy(Cff,ierr); CHKERRQ(ierr)
 call KSPDestroy(ksp,ierr); CHKERRQ(ierr)
 
 return

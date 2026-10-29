@@ -183,8 +183,8 @@ end interface
 
   double precision, dimension(:), allocatable           :: Fout         ! Kraftvektor mit allen Freiheiten, wobei alle Kraftewerte im globalen System sind
 ! ! Thermal matrices and vectors
-  Vec                                                   :: Tf,Tc,Qf,Qc
-  Mat                                                   :: Cff,Cfc
+  Vec                                                   :: T,Tf,Tc,Q,Qf,Qc
+  Mat                                                   :: C,Cff,Cfc,Ccf,Ccc
   IS                                                    :: is_free,is_bc
 !
 ! =================================================================================================
@@ -279,7 +279,7 @@ end interface
     if (fesim%thermal%enabled .and. rank .eq. 0) then
         ! Assemble matrices
         write(*,*) 'Starting sol3_assemble'
-        call sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc,is_free,is_bc)
+        call sol3_assemble(fesim,Tf,Tc,Q,Qf,Qc,C,Cff,Cfc,Ccf,Ccc,is_free,is_bc)
         write(*,*) 'Finished sol3_assemble'
         ! Solve Matrices
         write(*,*) 'Starting thermal solve'
@@ -289,12 +289,12 @@ end interface
         write(*,*) 'Starting thermal output to vtk'
         call sol3_output_vtk(fesim,Tf,Tc,is_free,is_bc)
         write(*,*) 'Finished thermal output to vtk'
-        ! Destroy thermal matrix
-        call VecDestroy(Tf, ierr)
-        call VecDestroy(Tc, ierr)
-
-
-
+        ! Destroy thermal matrices and Vectors
+        call VecDestroy(T,ierr)
+        call VecDestroy(Tf,ierr)
+        call VecDestroy(Tc,ierr)
+        call VecDestroy(Q,ierr)
+        call MatDestroy(C,ierr)
     end if
 
 

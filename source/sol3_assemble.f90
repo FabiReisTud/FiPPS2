@@ -38,7 +38,7 @@
 !
 ! =================================================================================================
 
-subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc,is_free,is_bc)
+subroutine sol3_assemble(fesim,Tf,Tc,Q,Qf,Qc,C,Cff,Cfc,Ccf,Ccc,is_free,is_bc)
 !
 ! =================================================================================================
 !
@@ -61,18 +61,17 @@ subroutine sol3_assemble(fesim,Tf,Tc,Qf,Qc,Cff,Cfc,is_free,is_bc)
 ! Input
   type(fe_simulation),intent(inout) :: fesim
 ! Output
-  Mat, intent(out)                  :: Cff, Cfc
-  Vec, intent(out)                  :: Tf,Tc,Qf,Qc
+  Mat, intent(out)                  :: C,Cff, Cfc, Ccf, Ccc
+  Vec, intent(out)                  :: Tf,Tc,Q,Qf,Qc
   IS, intent(out)                   :: is_free, is_bc
 ! Internal Vectors/Matrices
-  Mat                               :: C, Ccf, Ccc
-  Vec                               :: T,Q
   Mat                               :: PermutMat
   PetscErrorCode                    :: ierr
   PetscViewer                       :: viewer
 ! Internal other
   integer                           :: err_code=0
-  logical                           :: write=.FALSE.
+  logical                           :: write=.TRUE.
+  PetscInt                          :: is_free_size,is_bc_size
 !
 ! =================================================================================================
 !
@@ -105,18 +104,23 @@ interface
     Mat,intent(out)                 :: C
   end subroutine sol3_tsolid20_cond_control
 
-  subroutine sol3_get_q_vec(fesim,q)
-      use petscvec
+  subroutine sol3_get_q_vec(fesim,q,qf,qc,is_free,is_bc)
       use fesimulation_typen
+      use petscvec
+      use petscmat
+      use petscis
       type(fe_simulation), intent(in)   :: fesim
-      Vec,intent(out)                   :: q
+      Vec,intent(out)                   :: q,qf,qc
+      IS                                :: is_free,is_bc
   end subroutine
 
-  subroutine sol3_get_t_vec(fesim,T)
+  subroutine sol3_get_t_vec(fesim,Tf,Tc,is_free,is_bc)
       use petscvec
+      use petscis
       use fesimulation_typen
-      type(fe_simulation), intent(in)   :: fesim
-      Vec,intent(out)                   :: T
+      type(fe_simulation), intent(inout)   :: fesim
+      Vec,intent(out)                   :: Tf,Tc
+      IS,intent(inout)                   :: is_free,is_bc
   end subroutine
 end interface
 ! =================================================================================================
@@ -140,14 +144,10 @@ end interface
   call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_bc,   is_free, MAT_INITIAL_MATRIX, Ccf, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_bc,   is_bc,   MAT_INITIAL_MATRIX, Ccc, ierr); CHKERRQ(ierr)
-! Get Q, Qf-Vectors
-  call sol3_get_q_vec(fesim,Q)
-  call VecGetSubVector(Q,is_free,Qf,ierr); CHKERRQ(ierr)
-  call VecGetSubVector(Q,is_bc,Qc,ierr); CHKERRQ(ierr)
+! Get Q, Qf-, Qc-Vector
+  call sol3_get_q_vec(fesim,Q,Qf,Qc,is_free,is_bc)
 ! Get T, Tc-Vectors
-  call sol3_get_t_vec(fesim,T)
-  call VecGetSubVector(T,is_free,Tf,ierr); CHKERRQ(ierr)
-  call VecGetSubVector(T,is_bc,Tc,ierr); CHKERRQ(ierr)
+  call sol3_get_t_vec(fesim,Tf,Tc,is_free,is_bc)
 
 ! Write the Matrices and Vectors, if requested
   if (write) then
@@ -198,11 +198,6 @@ end interface
     write(*,*) 'Finished export of thermal matrices and vectors'
   end if
 ! Cleanup
-  call MatDestroy(C, ierr); CHKERRQ(ierr)
-  call VecDestroy(Q, ierr); CHKERRQ(ierr)
-  call VecDestroy(T, ierr); CHKERRQ(ierr)
-  call MatDestroy(Ccf, ierr); CHKERRQ(ierr)
-  call MatDestroy(Ccc, ierr); CHKERRQ(ierr)
 ! =================================================================================================
 !
 ! Error handling

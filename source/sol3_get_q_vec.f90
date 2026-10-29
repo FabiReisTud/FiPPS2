@@ -29,13 +29,16 @@
 !> @author Fabian Reisener, TU Dresden, WM 2026
 !
 ! =================================================================================================
-subroutine sol3_get_q_vec(fesim,q)
+subroutine sol3_get_q_vec(fesim,q,qf,qc,is_free,is_bc)
 !=================================================================================================
 use fesimulation_typen
 #include "petsc/finclude/petscvec.h"
 use petscvec
 #include "petsc/finclude/petscmat.h"
 use petscmat
+#include "petsc/finclude/petscis.h"
+use petscis
+
 use globale_variablen
 use konstanten
 
@@ -43,8 +46,9 @@ implicit none
 
 ! Input
 type(fe_simulation), intent(in) :: fesim
+IS                              :: is_free,is_bc
 ! Output
-Vec, intent(out)                :: q
+Vec, intent(out)                :: q,qf,qc
 ! Internal
 PetscErrorCode                  :: ierr
 PetscMPIInt                     :: rank
@@ -55,6 +59,7 @@ double precision, allocatable   :: q_array(:)
 double precision                :: T_node
 integer, allocatable            :: q_indices(:)
 integer, dimension(8)           :: node_ids
+PetscInt                        :: is_bc_size, is_free_size
 
 ! =================================================================================================
 !
@@ -134,6 +139,26 @@ call VecSetValues(q, nsize, q_indices, q_array, INSERT_VALUES, ierr); CHKERRQ(ie
 ! Assemble vector
 call VecAssemblyBegin(q, ierr); CHKERRQ(ierr)
 call VecAssemblyEnd(q, ierr); CHKERRQ(ierr)
+
+! Get Qf
+call ISGetSize(is_free,is_free_size,ierr); CHKERRQ(ierr)
+call VecCreate(PETSC_COMM_SELF,qf,ierr); CHKERRQ(ierr)
+call VecSetSizes(qf, PETSC_DECIDE, is_free_size, ierr); CHKERRQ(ierr)
+call VecSetFromOptions(qf, ierr); CHKERRQ(ierr)
+call VecGetSubvector(q,is_free,qf,ierr); CHKERRQ(ierr)
+call VecAssemblyBegin(qf, ierr); CHKERRQ(ierr)
+call VecAssemblyEnd(qf, ierr); CHKERRQ(ierr)
+!call VecView(qf, PETSC_VIEWER_STDOUT_SELF, ierr); CHKERRQ(ierr)
+
+! Get Qc
+call ISGetSize(is_bc,is_bc_size,ierr); CHKERRQ(ierr)
+call VecCreate(PETSC_COMM_SELF,qc,ierr); CHKERRQ(ierr)
+call VecSetSizes(qc, PETSC_DECIDE, is_bc_size, ierr); CHKERRQ(ierr)
+call VecSetFromOptions(qc, ierr); CHKERRQ(ierr)
+call VecGetSubvector(q,is_bc,qc,ierr); CHKERRQ(ierr)
+call VecAssemblyBegin(qc, ierr); CHKERRQ(ierr)
+call VecAssemblyEnd(qc, ierr); CHKERRQ(ierr)
+!call VecView(qc, PETSC_VIEWER_STDOUT_SELF, ierr); CHKERRQ(ierr)
 
 ! Deallocate temporaries
 deallocate(q_array)
