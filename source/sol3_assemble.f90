@@ -128,9 +128,11 @@ end interface
 ! Calculation
 
 ! Set the thermal_dof_map
-  write(*,*) 'Starting the setting thermal dof map'
-  call sol3_set_thermal_dof_map(fesim)
-  write(*,*) 'Setting of the thermal dof map finished'
+  if (allocated(fesim%internals%thermal_dof_map) .NE. .TRUE.) then
+    write(*,*) 'Starting the setting thermal dof map'
+    call sol3_set_thermal_dof_map(fesim)
+    write(*,*) 'Setting of the thermal dof map finished'
+  end if
 ! Get index sets for free and constrained dofs
   write(*,*) 'Starting the getting of the dof index set'
   call sol3_get_dof_is(fesim,is_free,is_bc)

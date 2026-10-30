@@ -173,7 +173,7 @@ end interface
 
   double precision, allocatable, dimension(:)           :: cdi
   double precision                                      :: displ, maxDispl, oldMaxDispl
-  integer                                               :: ii
+  integer                                               :: ii,nn
   logical                                               :: aeroConverged = .false.
   logical                                               :: moved = .false.
   character(3)                                          :: majorChar
@@ -277,24 +277,37 @@ end interface
   !
   ! Steady state thermal solution solution
     if (fesim%thermal%enabled .and. rank .eq. 0) then
-        ! Assemble matrices
-        write(*,*) 'Starting sol3_assemble'
-        call sol3_assemble(fesim,Tf,Tc,Q,Qf,Qc,C,Cff,Cfc,Ccf,Ccc,is_free,is_bc)
-        write(*,*) 'Finished sol3_assemble'
-        ! Solve Matrices
-        write(*,*) 'Starting thermal solve'
-        call sol3_solve(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
-        write(*,*) 'Finished thermal solve'
-        ! Output to VTK
-        write(*,*) 'Starting thermal output to vtk'
-        call sol3_output_vtk(fesim,Tf,Tc,is_free,is_bc)
-        write(*,*) 'Finished thermal output to vtk'
-        ! Destroy thermal matrices and Vectors
-        call VecDestroy(T,ierr)
-        call VecDestroy(Tf,ierr)
-        call VecDestroy(Tc,ierr)
-        call VecDestroy(Q,ierr)
-        call MatDestroy(C,ierr)
+        if (fesim%thermal%iterative) then
+            ! while thermal exit criterion (temperature change) is not met, do loop
+            nn = fesim%thermal%max_iterations
+        else
+            nn = 1
+        endif
+        ii = 1
+        do while(ii<=nn .AND. fesim%thermal%successful .EQ. .FALSE.)
+            fesim%thermal%iteration = ii ! Set iteration number in thermal state
+            write(*,*) '====STARTING THERMAL ITERATION NR ',fesim%thermal%iteration,'===='
+            ! Assemble matrices
+            write(*,*) 'Starting sol3_assemble'
+            call sol3_assemble(fesim,Tf,Tc,Q,Qf,Qc,C,Cff,Cfc,Ccf,Ccc,is_free,is_bc)
+            write(*,*) 'Finished sol3_assemble'
+            ! Solve Matrices
+            write(*,*) 'Starting thermal solve'
+            call sol3_solve(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
+            write(*,*) 'Finished thermal solve'
+            ! Output to VTK
+            write(*,*) 'Starting thermal output'
+            call sol3_output(fesim,Tf,Tc,is_free,is_bc)
+            write(*,*) 'Finished thermal output'
+            ! Destroy thermal matrices and Vectors
+            call VecDestroy(T,ierr)
+            call VecDestroy(Tf,ierr)
+            call VecDestroy(Tc,ierr)
+            call VecDestroy(Q,ierr)
+            call MatDestroy(C,ierr)
+            ii = ii + 1
+            write(*,*) '====FINISHED THERMAL ITERATION NR ',fesim%thermal%iteration,'===='
+        end do
     end if
 
 

@@ -62,6 +62,7 @@ module thermal_typen
     logical :: thermal_only = .false.   ! Do only thermal?
     logical :: iterative = .false.             ! Does the model include temperature dependent materials --> if so, iterative solve is necessary
     logical :: successful = .false. ! war die thermische Berechnung erfolgreich
+    integer :: iteration = 1
     integer :: max_iterations = 50      ! Max Iterations for iterative (nonLinear)
     double precision :: tolerance = 1.d-8   ! Convergence tolerance
     double precision :: relaxation = 0.8d0  ! Relaxation factor for NL line search

@@ -28,7 +28,7 @@
 !>  \author     Fabian Reisener, WM, 2026
 !
 ! =================================================================================================
-subroutine sol3_output_vtk(fesim,Tf,Tc,is_free,is_bc)
+subroutine sol3_output(fesim,Tf,Tc,is_free,is_bc)
 !
 ! =================================================================================================
 !
@@ -64,6 +64,8 @@ IS                                  :: is_stride_bc, is_stride_free
 VecScatter                          :: scatter_bc, scatter_free
 PetscScalar, pointer                :: vec_array(:)
 double precision,allocatable        :: dataT(:)
+character(100)                      :: fname
+double precision                    :: eps
 !
 ! =================================================================================================
 !
@@ -91,18 +93,42 @@ call VecScatterBegin(scatter_free,Tf,T,INSERT_VALUES,SCATTER_FORWARD,ierr); CHKE
 call   VecScatterEnd(scatter_free,Tf,T,INSERT_VALUES,SCATTER_FORWARD,ierr); CHKERRQ(ierr)
 call VecScatterDestroy(scatter_free,ierr); CHKERRQ(ierr)
 
-!!!!! Output to VTK
-call vtkoutprep('output_thermal.vtk')               ! VTK-Datei öffnen und vorbereiten
-call vtkoutmesh(fesim)                              ! Write mesh
+!!!!! Write T-field to the thermal state
+
 ! Convert T to an array
 call VecGetSize(T,size_all,ierr); CHKERRQ(ierr)
 allocate(dataT(size_all),vec_array(size_all))
 call VecGetArrayF90(T, vec_array, ierr); CHKERRQ(ierr)
 dataT = vec_array
+call VecRestoreArrayF90(T, vec_array, ierr); CHKERRQ(ierr) ! Restore
+
+if (allocated(fesim%thermal%temperature) .NE. .TRUE.) then
+    allocate(fesim%thermal%temperature(fesim%num_nodes))
+else ! if it has been allocated and written to already, transfer to temp_old
+    fesim%thermal%temperature_old = fesim%thermal%temperature
+end if
+fesim%thermal%temperature = dataT ! Update T-vector
+
+!!!!! Output to VTK
+write(fname, '("output_thermal_", I0, ".vtk")') fesim%thermal%iteration
+call vtkoutprep(fname)               ! VTK-Datei öffnen und vorbereiten
+call vtkoutmesh(fesim)                              ! Write mesh
+
 ! Write dataT to the VTK
 call vtkoutpointscalar(dataT, fesim%num_nodes, 'temperature')
-! Restore
-call VecRestoreArrayF90(T, vec_array, ierr); CHKERRQ(ierr)
+
+!!!!! Check for Convergence
+if (fesim%thermal%iterative .AND. fesim%thermal%iteration>=2) then
+    eps = dot_product(fesim%thermal%temperature - fesim%thermal%temperature_old,fesim%thermal%temperature - fesim%thermal%temperature_old)
+    eps = eps / dot_product(fesim%thermal%temperature_old,fesim%thermal%temperature_old)
+    write(*,*) 'Thermal temperature change norm = ',eps
+    write(*,*) '                      Tolerance = ',fesim%thermal%tolerance
+    if (eps < fesim%thermal%tolerance) then
+        fesim%thermal%successful = .TRUE.
+    end if
+elseif (fesim%thermal%iterative .EQ. .FALSE.) then
+    fesim%thermal%successful = .TRUE.
+end if
 
 return
 end subroutine

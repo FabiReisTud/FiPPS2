@@ -1908,10 +1908,10 @@ if (fesim%is_thermal) then
         read (37,'(3L10,1I10,2E23.16)',iostat=read_error) &
             & fesim%thermal%enabled, &
             & fesim%thermal%coupled_to_structure, &
-            & fesim%thermal%thermal_only, &
+            & fesim%thermal%iterative, &
             & fesim%thermal%max_iterations, &
-            & fesim%thermal%tolerance, &
-            & fesim%thermal%tref
+            & fesim%thermal%tref, &
+            & fesim%thermal%tolerance
         if (read_error /= 0) then
             write(*,*) 'Error reading file ', fname
             write(*,*) 'There was an error processing line 1'
@@ -2081,9 +2081,6 @@ if (fesim%is_mat_thermal_td) then
             end if
 
         end do
-
-        ! Temperature-dependent materials exist --> iterative solve is necessary
-        fesim%thermal%iterative = .true.
 
     else
         write (*,*) 'Error opening file ', fname
