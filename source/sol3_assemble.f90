@@ -145,9 +145,13 @@ end interface
   call MatCreateSubMatrix(C, is_bc,   is_free, MAT_INITIAL_MATRIX, Ccf, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_bc,   is_bc,   MAT_INITIAL_MATRIX, Ccc, ierr); CHKERRQ(ierr)
 ! Get Q, Qf-, Qc-Vector
+  write(*,*) 'Starting the assembly of the q vector'
   call sol3_get_q_vec(fesim,Q,Qf,Qc,is_free,is_bc)
+  write(*,*) 'Finished the assembly of the q vector'
 ! Get T, Tc-Vectors
+  write(*,*) 'Starting the assembly of the T vector'
   call sol3_get_t_vec(fesim,Tf,Tc,is_free,is_bc)
+  write(*,*) 'Finished the assembly of the T vector'
 
 ! Write the Matrices and Vectors, if requested
   if (write) then

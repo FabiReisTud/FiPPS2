@@ -1944,7 +1944,7 @@ if (fesim%is_mat_thermal_td) then
             err_code=1
             goto 9999
         end if
-        if (rowcount < 4) then
+        if (rowcount < 3) then
             write(*,*) 'Error reading file ', fname
             write(*,*) 'At least one temperature-dependent thermal material must be defined. ',fname,' only contains ',rowcount,' lines!'
             err_code=1
@@ -1952,7 +1952,7 @@ if (fesim%is_mat_thermal_td) then
         end if
 
         ! read values: 3 lines per material,
-        nn = (rowcount-1)/3
+        nn = rowcount/3
         allocate(fesim%thermal%materials_td(1:nn))
         do ii=1,nn
 
@@ -2026,10 +2026,11 @@ if (fesim%is_mat_thermal_td) then
             err_code=1
             goto 9999
         end if
-
-        ! ---------------- Validation (unchanged) ----------------
+        ! ---------------- Validation ----------------
         do ii=1,nn
-
+            !write(*,*) fesim%thermal%materials_td(ii)%mid
+            !write(*,*) fesim%thermal%materials_td(ii)%k%T
+            !write(*,*) fesim%thermal%materials_td(ii)%k%value
             if (fesim%thermal%materials_td(ii)%mid < 1) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'TMID_TD must be larger than 0 for material', ii

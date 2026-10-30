@@ -79,70 +79,70 @@ subroutine sol3_set_thermal_dof_map(fesim)
     fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%tbcs(ii)%temperature          ! Set the temperature value at the node
  end do
 
- ! 122. Loop over flux BCs
- do ii=1,size(fesim%thermal%fluxes)
-    node_ids(1) = fesim%thermal%fluxes(ii)%nid1
-    node_ids(2) = fesim%thermal%fluxes(ii)%nid2
-    node_ids(3) = fesim%thermal%fluxes(ii)%nid3
-    node_ids(4) = fesim%thermal%fluxes(ii)%nid4
-    node_ids(5) = fesim%thermal%fluxes(ii)%nid5
-    node_ids(6) = fesim%thermal%fluxes(ii)%nid6
-    node_ids(7) = fesim%thermal%fluxes(ii)%nid7
-    node_ids(8) = fesim%thermal%fluxes(ii)%nid8
-
-    do jj=1,8
-        ll = node_ids(jj)
-        if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
-            write(*,*) 'Cannot assign fluxBC to Node with ID ',node_ids(jj)
-            if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
-                write(*,*) 'Since it has already been assigned a temperatureBC'
-            else
-                write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
-            endif
-            err_code = 2
-            goto 9999
-        end if
-        fesim%internals%thermal_dof_map(ll,2) = 2.                              ! Set the type to 1 to signal temperature bc
-        fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%fluxes(ii)%q      ! Set the temperature value at the node
-    end do
- end do
-
- ! 123. Loop over convection BCs
- do ii=1,size(fesim%thermal%convections)
-    node_ids(1) = fesim%thermal%convections(ii)%nid1
-    node_ids(2) = fesim%thermal%convections(ii)%nid2
-    node_ids(3) = fesim%thermal%convections(ii)%nid3
-    node_ids(4) = fesim%thermal%convections(ii)%nid4
-    node_ids(5) = fesim%thermal%convections(ii)%nid5
-    node_ids(6) = fesim%thermal%convections(ii)%nid6
-    node_ids(7) = fesim%thermal%convections(ii)%nid7
-    node_ids(8) = fesim%thermal%convections(ii)%nid8
-
-    do jj=1,8
-        ll = node_ids(jj)
-        if (ll == 0) then
-            write(*,*) 'NID ',node_ids(jj),' from convectionBc could not be found in thermal_dof_map!'
-            err_code = 2
-            goto 9999
-        end if
-        if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
-            write(*,*) 'Cannot assign convectionBc to Node with ID ',node_ids(jj)
-            if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
-                write(*,*) 'Since it has already been assigned a temperatureBC'
-            elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.) then
-                write(*,*) 'Since it has already been assigned a fluxBC'
-            else
-                write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
-            end if
-            err_code = 2
-            goto 9999
-        end if
-        fesim%internals%thermal_dof_map(ll,2) = 3.                              ! Set the type to 1 to signal temperature bc
-        fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%convections(ii)%h ! Set the temperature value at the node
-        fesim%internals%thermal_dof_map(ll,4) = fesim%thermal%convections(ii)%T_amb ! Set the temperature value at the node
-    end do
- end do
- ! 124. Loop over MPCs
+! ! 122. Loop over flux BCs
+! do ii=1,size(fesim%thermal%fluxes)
+!    node_ids(1) = fesim%thermal%fluxes(ii)%nid1
+!    node_ids(2) = fesim%thermal%fluxes(ii)%nid2
+!    node_ids(3) = fesim%thermal%fluxes(ii)%nid3
+!    node_ids(4) = fesim%thermal%fluxes(ii)%nid4
+!    node_ids(5) = fesim%thermal%fluxes(ii)%nid5
+!    node_ids(6) = fesim%thermal%fluxes(ii)%nid6
+!    node_ids(7) = fesim%thermal%fluxes(ii)%nid7
+!    node_ids(8) = fesim%thermal%fluxes(ii)%nid8
+!
+!    do jj=1,8
+!        ll = node_ids(jj)
+!        if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
+!            write(*,*) 'Cannot assign fluxBC to Node with ID ',node_ids(jj)
+!            if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
+!                write(*,*) 'Since it has already been assigned a temperatureBC'
+!            else
+!                write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
+!            endif
+!            err_code = 2
+!            goto 9999
+!        end if
+!        fesim%internals%thermal_dof_map(ll,2) = 2.                              ! Set the type to 1 to signal temperature bc
+!        fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%fluxes(ii)%q      ! Set the temperature value at the node
+!    end do
+! end do
+!
+! ! 123. Loop over convection BCs
+! do ii=1,size(fesim%thermal%convections)
+!    node_ids(1) = fesim%thermal%convections(ii)%nid1
+!    node_ids(2) = fesim%thermal%convections(ii)%nid2
+!    node_ids(3) = fesim%thermal%convections(ii)%nid3
+!    node_ids(4) = fesim%thermal%convections(ii)%nid4
+!    node_ids(5) = fesim%thermal%convections(ii)%nid5
+!    node_ids(6) = fesim%thermal%convections(ii)%nid6
+!    node_ids(7) = fesim%thermal%convections(ii)%nid7
+!    node_ids(8) = fesim%thermal%convections(ii)%nid8
+!
+!    do jj=1,8
+!        ll = node_ids(jj)
+!        if (ll == 0) then
+!            write(*,*) 'NID ',node_ids(jj),' from convectionBc could not be found in thermal_dof_map!'
+!            err_code = 2
+!            goto 9999
+!        end if
+!        if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
+!            write(*,*) 'Cannot assign convectionBc to Node with ID ',node_ids(jj)
+!            if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
+!                write(*,*) 'Since it has already been assigned a temperatureBC'
+!            elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.) then
+!                write(*,*) 'Since it has already been assigned a fluxBC'
+!            else
+!                write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
+!            end if
+!            err_code = 2
+!            goto 9999
+!        end if
+!        fesim%internals%thermal_dof_map(ll,2) = 3.                              ! Set the type to 1 to signal temperature bc
+!        fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%convections(ii)%h ! Set the temperature value at the node
+!        fesim%internals%thermal_dof_map(ll,4) = fesim%thermal%convections(ii)%T_amb ! Set the temperature value at the node
+!    end do
+! end do
+! 124. Loop over MPCs
  do ii=1,size(fesim%randbedingungen%mpcs)
     ll = node_ids(jj)
     if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
