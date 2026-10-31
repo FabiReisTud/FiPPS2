@@ -209,6 +209,7 @@ do while (jj <= len(line))
         !!!!!!!!!!! Thermal: Start
         else if (word == 'thermal') then
             fesim%is_thermal = .true.
+            fesim%is_temperature = .true. ! the existence of a thermal simulation implies the existence of nodal temperature loads
         else if (word == 'matthermaltd') then
             fesim%is_mat_thermal_td = .true.
         else if (word == 'tbc') then

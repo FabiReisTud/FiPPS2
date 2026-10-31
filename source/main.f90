@@ -277,6 +277,12 @@ end interface
   !
   ! Steady state thermal solution solution
     if (fesim%thermal%enabled .and. rank .eq. 0) then
+        ! handle the existence of beam2 or quad8-elements
+        if (fesim%is_beam2 .OR. fesim%is_quad8) then
+            write(*,*) 'Error in Main: Thermal simulation is enabled, but model also contains beam2/quad8 elements'
+            write(*,*) 'This has not been implemented yet! Stopping FiPPS...'
+            stop
+        end if
         if (fesim%thermal%iterative) then
             ! while thermal exit criterion (temperature change) is not met, do loop
             nn = fesim%thermal%max_iterations
@@ -308,6 +314,9 @@ end interface
             ii = ii + 1
             write(*,*) '====FINISHED THERMAL ITERATION NR ',fesim%thermal%iteration,'===='
         end do
+        if (fesim%thermal%successful .EQ. .FALSE.) then
+            write(*,*) '====THERMAL SIMULATION WAS UNSUCCESSFUL===='
+        end if
     end if
 
 

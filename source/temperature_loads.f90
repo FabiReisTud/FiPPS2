@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -39,7 +39,7 @@ subroutine temperature_loads(fesim, lcID, pos, lvec)
 ! =================================================================================================
 !   Input:      hh:   Index of current load
 !               pos:  Position of loadvector in loadvector array
-!               
+!
 !   In-/Output: lvec: Total loadvector for current load
 !
 ! =================================================================================================
@@ -78,6 +78,7 @@ use fesimulation_typen
  double precision                                :: lsolid20_temperatures(size(fesim%elemente%lsolid20s,1))
  double precision, dimension(:), allocatable     :: elementtemperatures_vtk
  integer                                         :: eid_offset
+ integer                                         :: ii
 !
 ! =================================================================================================
 !
@@ -91,6 +92,11 @@ use fesimulation_typen
   beam2_temperatures(:)    = 0.d0
   quad8_temperatures(:)    = 0.d0
   lsolid20_temperatures(:) = 0.d0
+
+  ! Get nodal temperatures from the thermal simulation
+  if (fesim%thermal%enabled) then
+    nodal_temperatures = fesim%thermal%temperature
+  end if
 
   ! Get nodal temperature at every node
   if (fesim%is_temperature .eqv. .true.) then
@@ -108,7 +114,7 @@ use fesimulation_typen
   if (fesim%is_quad8temp .eqv. .true.) call get_quad8_temperatures(fesim, lcID, quad8_temperatures)
 !
   ! Get elemental temperatures at lsolid20 elements
-  if (fesim%is_lsolid20temp .eqv. .true.) call get_lsolid20_temperatures(fesim, lcID, lsolid20_temperatures)  
+  if (fesim%is_lsolid20temp .eqv. .true.) call get_lsolid20_temperatures(fesim, lcID, lsolid20_temperatures)
 !
   ! Write elemental temperatures to vtk file
   if ((fesim%is_beam2temp .eqv. .true.) .or. (fesim%is_quad8temp .eqv. .true.) .or. (fesim%is_lsolid20temp .eqv. .true.)) then

@@ -66,7 +66,7 @@ module thermal_typen
     integer :: max_iterations = 50      ! Max Iterations for iterative (nonLinear)
     double precision :: tolerance = 1.d-8   ! Convergence tolerance
     double precision :: relaxation = 0.8d0  ! Relaxation factor for NL line search
-    double precision :: tref = 293.15d0     ! Reference temperature --> Material also has a tref??
+    double precision :: tref = 293.15d0     ! Reference temperature, is simply a starting point for simulation of td-thermal-mats, sol1 has its own tref
     double precision, allocatable :: temperature(:)
     double precision, allocatable :: temperature_old(:)
     type(thermal_material_type), allocatable :: materials(:)

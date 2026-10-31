@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -75,7 +75,7 @@ integer                                :: err_code=0
 !
 ! Initialisation
 !
- nodal_temperatures = 0.D0
+! nodal_temperatures = 0.D0 ! FR: this is redundant, since nodal_temperature is already initialized in "temperature_loads"
  T_ref = 0.d0
  allocate(temp_flag(fesim%num_nodes))
  temp_flag = .FALSE.
@@ -89,11 +89,11 @@ integer                                :: err_code=0
  do ii = 1,size(fesim%lasten%nodetemps,1)
    do jj = 1,size(fesim%lasten%loads,1)
      if ((fesim%lasten%loads(jj)%lcid .eq. lcID) .and. (fesim%lasten%loads(jj)%lidi .eq. fesim%lasten%nodetemps(ii)%lid) .and. (fesim%lasten%nodetemps(ii)%nid .eq. 0)) then
-       T_ref = fesim%lasten%nodetemps(ii)%temp
+       T_ref = fesim%lasten%nodetemps(ii)%temp ! Tref is set from the first entry(nid==0) of the nodetemps-array.
      end if
    end do
  end do
- 
+
  ! Loop over each temperature load to get all node temperatures assigned to this load case;
  ! Set temperature at node to (given temperature - reference temperature);
  ! Temperature = 0 is set to all nodes where no explicit temperature was assigned
@@ -162,9 +162,9 @@ integer                                :: err_code=0
    end do
    deallocate(node_ids)
  end if
- 
+
  deallocate(temp_flag)
- 
+
 !
 ! =================================================================================================
 !
@@ -173,13 +173,13 @@ integer                                :: err_code=0
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'get_node_temperatures'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return
