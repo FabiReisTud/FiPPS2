@@ -1,0 +1,13 @@
+-handle edge cases
+	-no boundary conditions defined
+	-only one flux/convection or temperature bc defined --> warning
+-implement MPCs with penalty multipliers
+	-how to determine penalty?
+	-maybe reordering is not as complicated, as Reddy says
+-writing of flux onto surfaces of external faces
+	-how to determine if a face is external:
+	all 8 facenodes are not ALL also owned by more than one element
+	fesim%elemente%nodes vs nodelist until more than 1 match
+	-integrate the components of Q-vector across the face
+	-for solid faces, create shellelements in vtk and write the flux to them
+-check parallelization procedures, compare parallel results with single-results
