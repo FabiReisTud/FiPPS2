@@ -143,25 +143,25 @@ subroutine sol3_set_thermal_dof_map(fesim)
 !    end do
 ! end do
 ! 124. Loop over MPCs
- do ii=1,size(fesim%randbedingungen%mpcs)
-    ll = node_ids(jj)
-    if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
-        write(*,*) 'Cannot assign MPCID: ',fesim%randbedingungen%mpcs(ii)%sid,' to dependent Node with ID ',fesim%randbedingungen%mpcs(ii)%dependend%nid
-        if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
-            write(*,*) 'Since it has already been assigned a temperatureBC'
-        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.) then
-            write(*,*) 'Since it has already been assigned a fluxBC'
-        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 3.) then
-            write(*,*) 'Since it has already been assigned a convectionBC'
-        else
-            write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
-        end if
-        err_code = 2
-        goto 9999
-    end if
-    fesim%internals%thermal_dof_map(ll,2) = 4.
-    fesim%internals%thermal_dof_map(ll,3) = fesim%randbedingungen%mpcs(ii)%sid
- end do
+! do ii=1,size(fesim%randbedingungen%mpcs)
+!    ll =
+!    if (fesim%internals%thermal_dof_map(ll,2) .NE. 0.) then
+!        write(*,*) 'Cannot assign MPCID: ',fesim%randbedingungen%mpcs(ii)%sid,' to dependent Node with ID ',fesim%randbedingungen%mpcs(ii)%dependend%nid
+!        if (fesim%internals%thermal_dof_map(ll,2) .EQ. 1.) then
+!            write(*,*) 'Since it has already been assigned a temperatureBC'
+!        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 2.) then
+!            write(*,*) 'Since it has already been assigned a fluxBC'
+!        elseif (fesim%internals%thermal_dof_map(ll,2) .EQ. 3.) then
+!            write(*,*) 'Since it has already been assigned a convectionBC'
+!        else
+!            write(*,*) 'Since it has already been assigned an invalid BC-type-Nr.: ',fesim%internals%thermal_dof_map(ll,2)
+!        end if
+!        err_code = 2
+!        goto 9999
+!    end if
+!    fesim%internals%thermal_dof_map(ll,2) = 4.
+!    fesim%internals%thermal_dof_map(ll,3) = fesim%randbedingungen%mpcs(ii)%sid
+! end do
  ! 13. Loop over thermal_dof_map and create the permutation matrix PermutMat for the reordering of all matrices
 
 ! =================================================================================================

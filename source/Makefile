@@ -51,6 +51,7 @@ estimate_number_nonzeros_block.o \
 sol3_set_thermal_dof_map.o \
 sol3_tsolid20_cond.o \
 sol3_tsolid20_cond_control.o \
+sol3_add_mpc.o \
 sol3_get_q_vec.o \
 sol3_get_t_vec.o \
 sol3_get_dof_is.o \

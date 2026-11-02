@@ -316,7 +316,9 @@ end interface
         end do
         if (fesim%thermal%successful .EQ. .FALSE.) then
             write(*,*) '====THERMAL SIMULATION WAS UNSUCCESSFUL===='
+            stop
         end if
+        fesim%is_temperature = .TRUE. ! set nodal temperature load pointer to true to enable the tempload-transition from sol3 to sol1
     end if
 
 

@@ -1,10 +1,14 @@
+-implement convective boundary conditions similarly to flux boundary conditions 
 -handle edge cases
 	-no boundary conditions defined
 	-only one flux/convection or temperature bc defined --> warning
 -implement MPCs with penalty multipliers
-	-how to determine penalty?
+	-add a new dof(temperature=="7") to the definition mpc to ensure,
+	 that no node is slave in more than one mpc, 
+	 which could easily be the case in sol1 (6dofs) 
+	-how to determine the penalty factor?
 	-maybe reordering is not as complicated, as Reddy says
--writing of flux onto surfaces of external faces
+-output of flux onto surfaces of external faces
 	-how to determine if a face is external:
 	all 8 facenodes are not ALL also owned by more than one element
 	fesim%elemente%nodes vs nodelist until more than 1 match
