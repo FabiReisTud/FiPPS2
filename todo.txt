@@ -1,6 +1,7 @@
+-implement an mpc w/o penalty factors
 -implement convective boundary conditions similarly to flux boundary conditions 
--handle edge cases
-	-no boundary conditions defined
+-check edge cases
+	-no thermal boundary conditions defined
 	-only one flux/convection or temperature bc defined --> warning
 -implement MPCs with penalty multipliers
 	-add a new dof(temperature=="7") to the definition mpc to ensure,
@@ -14,4 +15,11 @@
 	fesim%elemente%nodes vs nodelist until more than 1 match
 	-integrate the components of Q-vector across the face
 	-for solid faces, create shellelements in vtk and write the flux to them
--check parallelization procedures, compare parallel results with single-results
+-MAJOR: check parallelization procedures, compare parallel results with single-results
+
+Current problems:
+-solver does not accept only temperatures from thermal as a load 
+  --> one currently has to define dummy temploads at tbc-nodes
+-temploads from sol3 at dependend nodes of mpcs cause error 
+  --> disable error if dof==7, since coupling is only thermal
+  --> otherwise, dont write thermal loads at that node (since it is mechanically couped)  
