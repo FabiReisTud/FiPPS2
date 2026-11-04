@@ -113,7 +113,6 @@ call VecDestroy(diag_vec, ierr); CHKERRQ(ierr)
 pen = pen * 10000 ! Increase by a large number to ensure that penalty is large enough
 
 do ii=1,size(fesim%randbedingungen%mpcs)
-    write(*,*) 'fesim%randbedingungen%mpcs(ii)%dependend%dof = ', fesim%randbedingungen%mpcs(ii)%dependend%dof
     if (fesim%randbedingungen%mpcs(ii)%dependend%dof == 7) then ! Verify, that mpc is thermal type (dof==7)
         mpc_size = size(fesim%randbedingungen%mpcs(ii)%independend) + 1
         allocate(a_vals(mpc_size),a_indices(mpc_size))

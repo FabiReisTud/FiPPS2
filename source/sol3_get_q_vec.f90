@@ -57,7 +57,7 @@ integer                         :: ii, jj,ip,np, node_id
 integer                         :: nsize
 double precision                :: q_flux,q_local(8)
 double precision, allocatable   :: q_array(:)
-double precision                :: T_node
+double precision                :: T_ip, T_nodes(8)
 integer, allocatable            :: q_indices(:)
 integer, dimension(8)           :: node_ids
 PetscInt                        :: is_bc_size, is_free_size
@@ -148,8 +148,34 @@ do ii = 1, size(fesim%thermal%convections)
     node_ids(7) = fesim%thermal%convections(ii)%nid7
     node_ids(8) = fesim%thermal%convections(ii)%nid8
 
-    ! Compute local flux contributions
-    q_local = 0.d0
+    !!! Compute local flux contributions
+    q_local = 0.d0 ! Init the local q-contribution-vector
+    T_nodes = fesim%thermal%tref ! Init the node-temperature-vector
+    ! Get coordinates of the eight surface nodes, get their temperature
+    do jj = 1, 8
+        node_coords(jj,:) = fesim%knoten%nodes(node_ids(jj))%coords
+        if (allocated(fesim%thermal%temperature)) then
+            T_nodes(jj) = fesim%thermal%temperature(node_ids(jj))
+        end if
+    end do
+
+    call integration_points_2d( 2, "Gauss",   xi_ip, w_xi, 2, "Gauss",  eta_ip, w_eta)
+    do ip=1,4   ! Integrate by iterating through all Integration Points
+
+        ! Add IP-contribution to integral
+        w_ip = w_xi(ip)*w_eta(ip)
+        call quad8_ansatzfunction_xieta(xi_ip(ip), eta_ip(ip), Ni, dNidxi,dNideta)
+        detJ = j_s(xi_ip(ip),eta_ip(ip),node_coords) ! area scaling factor
+        ! Get ip temperature
+        T_ip = 0.d0
+        do jj=1,8
+            T_ip = T_ip + Ni(jj) * T_nodes(jj)
+        end do
+        ! Set q_flux according to temperature
+        q_flux = fesim%thermal%convections(ii)%h * (T_ip - fesim%thermal%convections(ii)%T_amb)
+        ! Add IP-contribution to local q-Vector
+        q_local = q_local + Ni * q_flux * detJ * w_ip
+    end do
 
     do jj = 1, 8
         q_array(node_ids(jj)) = q_array(node_ids(jj)) + q_local(jj)

@@ -654,6 +654,9 @@
 		<Unit filename="../source/sol2_solve_condensed_problem.f90">
 			<Option weight="1" />
 		</Unit>
+		<Unit filename="../source/sol3_add_mpc.f90">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="../source/sol3_assemble.f90">
 			<Option weight="1" />
 		</Unit>
@@ -666,7 +669,7 @@
 		<Unit filename="../source/sol3_get_t_vec.f90">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="../source/sol3_output_vtk.f90" />
+		<Unit filename="../source/sol3_output.f90" />
 		<Unit filename="../source/sol3_set_thermal_dof_map.f90">
 			<Option weight="1" />
 		</Unit>
