@@ -172,7 +172,7 @@ do ii = 1, size(fesim%thermal%convections)
             T_ip = T_ip + Ni(jj) * T_nodes(jj)
         end do
         ! Set q_flux according to temperature
-        q_flux = fesim%thermal%convections(ii)%h * (T_ip - fesim%thermal%convections(ii)%T_amb)
+        q_flux = fesim%thermal%convections(ii)%h * (fesim%thermal%convections(ii)%T_amb - T_ip)
         ! Add IP-contribution to local q-Vector
         q_local = q_local + Ni * q_flux * detJ * w_ip
     end do

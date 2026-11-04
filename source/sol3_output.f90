@@ -63,7 +63,7 @@ PetscInt                            :: size_bc,size_free,size_all
 IS                                  :: is_stride_bc, is_stride_free
 VecScatter                          :: scatter_bc, scatter_free
 PetscScalar, pointer                :: vec_array(:)
-double precision,allocatable        :: dataT(:)
+double precision,allocatable        :: T_new(:)
 character(100)                      :: fname
 double precision                    :: eps
 !
@@ -97,25 +97,18 @@ call VecScatterDestroy(scatter_free,ierr); CHKERRQ(ierr)
 
 ! Convert T to an array
 call VecGetSize(T,size_all,ierr); CHKERRQ(ierr)
-allocate(dataT(size_all),vec_array(size_all))
+allocate(T_new(size_all),vec_array(size_all))
 call VecGetArrayF90(T, vec_array, ierr); CHKERRQ(ierr)
-dataT = vec_array
+T_new = vec_array
 call VecRestoreArrayF90(T, vec_array, ierr); CHKERRQ(ierr) ! Restore
-
-if (allocated(fesim%thermal%temperature) .NE. .TRUE.) then
-    allocate(fesim%thermal%temperature(fesim%num_nodes))
-else ! if it has been allocated and written to already, transfer to temp_old
-    fesim%thermal%temperature_old = fesim%thermal%temperature
-end if
-fesim%thermal%temperature = dataT ! Update T-vector
 
 !!!!! Output to VTK
 write(fname, '("output_thermal_", I0, ".vtk")') fesim%thermal%iteration
 call vtkoutprep(fname)               ! VTK-Datei öffnen und vorbereiten
 call vtkoutmesh(fesim)                              ! Write mesh
 
-! Write dataT to the VTK
-call vtkoutpointscalar(dataT, fesim%num_nodes, 'temperature')
+! Write T_new to the VTK
+call vtkoutpointscalar(T_new, fesim%num_nodes, 'temperature')
 
 !!!!! Check for Convergence
 if (fesim%thermal%iterative .AND. fesim%thermal%iteration>=2) then
@@ -129,6 +122,23 @@ if (fesim%thermal%iterative .AND. fesim%thermal%iteration>=2) then
 elseif (fesim%thermal%iterative .EQ. .FALSE.) then
     fesim%thermal%successful = .TRUE.
 end if
+
+!!!!! Determine the new vectors, apply relaxation
+! Allocate
+if (allocated(fesim%thermal%temperature) .NE. .TRUE.) then
+    allocate(fesim%thermal%temperature(fesim%num_nodes))
+end if
+
+if (fesim%thermal%successful) then
+    ! If converged, set temperature to T_new for structural
+    fesim%thermal%temperature = T_new
+else
+    ! If not converged, apply relaxation
+    fesim%thermal%temperature_old = fesim%thermal%temperature
+    fesim%thermal%temperature = fesim%thermal%relaxation * fesim%thermal%temperature_old + (1 - fesim%thermal%relaxation) * T_new
+end if
+
+
 
 return
 end subroutine

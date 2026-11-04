@@ -70,7 +70,7 @@ subroutine sol3_assemble(fesim,Tf,Tc,Q,Qf,Qc,C,Cff,Cfc,Ccf,Ccc,is_free,is_bc)
   PetscViewer                       :: viewer
 ! Internal other
   integer                           :: err_code=0
-  logical                           :: write=.TRUE.
+  logical                           :: write=.FALSE.
   PetscInt                          :: is_free_size,is_bc_size
   double precision                  :: C_max
 !
