@@ -93,17 +93,12 @@ use fesimulation_typen
   quad8_temperatures(:)    = 0.d0
   lsolid20_temperatures(:) = 0.d0
 
-  ! Get nodal temperatures from the thermal simulation
-  if (fesim%thermal%enabled) then
-    nodal_temperatures = fesim%thermal%temperature
-  end if
-
   ! Get nodal temperature at every node
   if (fesim%is_temperature .eqv. .true.) then
     call get_node_temperatures(fesim, lcID, nodal_temperatures)
     if (fesim%ausgabe%outputVTK .eqv. .true.) then
       ! Write nodal temperature to vtk
-      call vtkoutpointscalar(nodal_temperatures, fesim%num_nodes, 'Temperatur')
+      call vtkoutpointscalar(nodal_temperatures, fesim%num_nodes, 'Temperatur-Tref')
     endif
   end if
 !

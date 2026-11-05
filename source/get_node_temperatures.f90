@@ -94,6 +94,12 @@ integer                                :: err_code=0
    end do
  end do
 
+
+! Get nodal temperatures from the thermal simulation
+if (fesim%thermal%enabled .AND. fesim%thermal%coupled_to_structure) then
+    write(*,*) 'Translating thermal solution as nodal temperature loads to structural.'
+    nodal_temperatures = fesim%thermal%temperature - T_ref
+end if
  ! Loop over each temperature load to get all node temperatures assigned to this load case;
  ! Set temperature at node to (given temperature - reference temperature);
  ! Temperature = 0 is set to all nodes where no explicit temperature was assigned
