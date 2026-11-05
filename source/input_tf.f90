@@ -2019,6 +2019,13 @@ if (fesim%is_mat_thermal_td) then
                     goto 9999
                 end if
             end do
+
+            if (fesim%thermal%materials_td(ii)%k%n>1 .AND. fesim%thermal%iterative .EQ. .FALSE.) then
+                write(*,*) 'Warning while processing TMID with ID ', fesim%thermal%materials_td(ii)%mid
+                write(*,*) 'The materials k-curve has more than 1 (',fesim%thermal%materials_td(ii)%k%n,') values defined'
+                write(*,*) 'An iterative thermal solve has been disabled via thermal-Keyword, but is recommended.'
+            end if
+
         end do
         close (40, iostat=io_error)
         if (io_error /= 0) then
@@ -2028,9 +2035,6 @@ if (fesim%is_mat_thermal_td) then
         end if
         ! ---------------- Validation ----------------
         do ii=1,nn
-            !write(*,*) fesim%thermal%materials_td(ii)%mid
-            !write(*,*) fesim%thermal%materials_td(ii)%k%T
-            !write(*,*) fesim%thermal%materials_td(ii)%k%value
             if (fesim%thermal%materials_td(ii)%mid < 1) then
                 write(*,*) 'Error reading file ', fname
                 write(*,*) 'TMID_TD must be larger than 0 for material', ii
@@ -2066,20 +2070,6 @@ if (fesim%is_mat_thermal_td) then
                     goto 9999
                 end if
             end do
-
-            ! TMID_TD must not clash with a constant thermal material
-            if (allocated(fesim%thermal%materials)) then
-                do jj=1,size(fesim%thermal%materials,1)
-                    if (fesim%thermal%materials_td(ii)%mid == fesim%thermal%materials(jj)%mid) then
-                        write(*,*) 'Error reading file ', fname
-                        write(*,*) 'TMID_TD ', fesim%thermal%materials_td(ii)%mid, &
-                                 & ' is also defined as constant thermal material'
-                        err_code=1
-                        goto 9999
-                    end if
-                end do
-            end if
-
         end do
 
     else
@@ -2210,6 +2200,12 @@ if (fesim%is_convection_bc) then
                 err_code=1
                 goto 9999
             end if
+
+            if (fesim%thermal%iterative .EQ. .FALSE.) then
+                write(*,*) 'Warning while processing convectionBC ', ii
+                write(*,*) 'An iterative thermal solve has been disabled via thermal-Keyword, but is recommended.'
+            end if
+
         end do
 
         close (39, iostat=io_error)

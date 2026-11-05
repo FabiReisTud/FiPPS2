@@ -75,7 +75,7 @@ integer                                :: err_code=0
 !
 ! Initialisation
 !
-! nodal_temperatures = 0.D0 ! FR: this is redundant, since nodal_temperature is already initialized in "temperature_loads"
+ nodal_temperatures = 0.D0 ! FR: this is redundant, since nodal_temperature is already initialized in "temperature_loads"
  T_ref = 0.d0
  allocate(temp_flag(fesim%num_nodes))
  temp_flag = .FALSE.
