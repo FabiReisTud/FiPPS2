@@ -125,8 +125,8 @@ do ii=1,size(fesim%randbedingungen%mpcs)
         a_indices(1) = fesim%randbedingungen%mpcs(ii)%dependend%nid
 
         do jj=1,size(fesim%randbedingungen%mpcs(ii)%independend)
-            a_indices(jj+1) = +fesim%randbedingungen%mpcs(ii)%independend(jj)%nid
-            a_vals(jj+1)    = -fesim%randbedingungen%mpcs(ii)%independend(jj)%fac
+            a_indices(jj+1) = fesim%randbedingungen%mpcs(ii)%independend(jj)%nid
+            a_vals(jj+1)    = fesim%randbedingungen%mpcs(ii)%independend(jj)%fac
         end do
         a_indices = a_indices - 1 ! Set to 0-based indices for petsc
 
