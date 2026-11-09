@@ -276,7 +276,7 @@ end interface
   ! =================================================================================================
   !
   ! Steady state thermal solution solution
-    if (fesim%thermal%enabled .and. rank .eq. 0) then
+    if (fesim%thermal%enabled .AND. rank .eq. 0) then
         ! handle the existence of beam2 or quad8-elements
         if (fesim%is_beam2 .OR. fesim%is_quad8) then
             write(*,*) 'Error in Main: Thermal simulation is enabled, but model also contains beam2/quad8 elements'

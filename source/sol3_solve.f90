@@ -61,7 +61,7 @@ PC                                  :: prec     ! precondition context
 PetscErrorCode                      :: ierr
 PetscReal                           :: alpha=-1.0, tol=1e-5
 PetscViewer                         :: viewer
-logical                             :: write=.TRUE.
+logical                             :: write=.FALSE.
 Vec                                 :: residual
 PetscScalar                         :: rnorm,rhsnorm
 !
@@ -81,7 +81,7 @@ call MatMult(Cfc,Tc,RHS2, ierr); CHKERRQ(ierr)   ! Multiply Cfc with Tc, save to
 call VecAXPY(RHS,alpha,RHS2, ierr); CHKERRQ(ierr) ! Subtract RHS2 from RHS(==Qf)
 
 ! Create linear solver
-call KSPCreate(PETSC_COMM_WORLD,ksp, ierr); CHKERRQ(ierr)
+call KSPCreate(PETSC_COMM_SELF,ksp, ierr); CHKERRQ(ierr)
 ! Set defining Matrix (==A))
 call KSPSetOperators(ksp,Cff,Cff, ierr); CHKERRQ(ierr)
 ! Solver settings (copied from sol1_solve)

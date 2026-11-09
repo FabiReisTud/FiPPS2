@@ -111,10 +111,10 @@ o_nnz = d_nnz
 !
 ! Calculation
 !
- call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
+! call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
 
 ! Create global conductivity matrix C
-call MatCreateAIJ(PETSC_COMM_WORLD, &
+call MatCreateAIJ(PETSC_COMM_SELF, &
                   PETSC_DECIDE, PETSC_DECIDE, &
                   nnodes_global, nnodes_global, &
                   10, d_nnz, &

@@ -80,11 +80,11 @@ end interface
 !
 ! Initialization
 !
-call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr); CHKERRQ(ierr)
+! call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr); CHKERRQ(ierr)
 
 ! Allocate q vector with size = number of thermal DOFs (number of nodes for temperature)
 nsize = fesim%num_nodes
-call VecCreate(PETSC_COMM_WORLD, q, ierr); CHKERRQ(ierr)
+call VecCreate(PETSC_COMM_SELF, q, ierr); CHKERRQ(ierr)
 call VecSetSizes(q, PETSC_DECIDE, nsize, ierr); CHKERRQ(ierr)
 call VecSetFromOptions(q, ierr); CHKERRQ(ierr)
 call VecSet(q, 0.0d0, ierr); CHKERRQ(ierr)

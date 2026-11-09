@@ -132,7 +132,7 @@ do ii=1,size(fesim%randbedingungen%mpcs)
 
         do jj=1,mpc_size
             do kk=1,mpc_size
-                arr_penalty(jj,kk) = arr_penalty(jj,kk) + pen * a_vals(ii) * a_vals(jj)
+                arr_penalty(jj,kk) = arr_penalty(jj,kk) + pen * a_vals(jj) * a_vals(kk)
             end do
         end do
         call MatSetValues(C, mpc_size, a_indices, mpc_size, a_indices, arr_penalty, ADD_VALUES, ierr); CHKERRQ(ierr)
