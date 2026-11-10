@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -63,17 +63,26 @@ if (fesim%is_mpcadd == .true.) then
     do gg=1,size(fesim%randbedingungen%mpcadds,1)
         if (fesim%lasten%subcases(scloop)%mpcaddid == fesim%randbedingungen%mpcadds(gg)%scid .or. &
           & fesim%randbedingungen%mpcadds(gg)%scid == -10) then                                         ! interne MPC durch Kontakte
-            
+
             ! Multi point constraints
-                
+
             if (fesim%is_mpc == .true.) then
                 !do ii=1,size(mpcs,1)
                 ii = fesim%randbedingungen%mpcadds(gg)%sid
+
+                ! Skip, if mpc is temperature-type (dof==7), since fixedU is otherwise thrown off
+                if (fesim%randbedingungen%mpcs(ii)%dependend%dof == 7) then
+                    write(*,*) 'Skipping '
+                    cycle
+                end if
+
                 if (fesim%randbedingungen%mpcadds(gg)%sid .eq. fesim%randbedingungen%mpcs(ii)%sid) then
                     if (fixedU((fesim%randbedingungen%mpcs(ii)%dependend%nid-1)*ndof+fesim%randbedingungen%mpcs(ii)%dependend%dof) == .TRUE.) then
 
-                        write(*,*) 'you try to set an MPC on a dof'
-                        write(*,*) 'that already is locked via a spc constraints'
+                        write(*,*) 'fesim%randbedingungen%mpcadds(gg)%sid=',fesim%randbedingungen%mpcadds(gg)%sid
+                        write(*,*) '   fesim%randbedingungen%mpcs(ii)%sid=',fesim%randbedingungen%mpcs(ii)%sid
+                        write(*,*) 'You tried to set an MPC on a DoF that'
+                        write(*,*) 'has also been locked been via an SPC.'
                         err_code=1
                         goto 9999
 
@@ -84,7 +93,7 @@ if (fesim%is_mpcadd == .true.) then
                     end if
                     do jj=1,size(fesim%randbedingungen%mpcs(ii)%independend,1)
                         fesim%randbedingungen%mpcs(ii)%independend(jj)%fac = fesim%randbedingungen%mpcs(ii)%independend(jj)%fac / (-fesim%randbedingungen%mpcs(ii)%dependend%fac)
-                        
+
                         ! Freiheit des Independend Knoten auf einen negativen Wert setzen, falls diese Freiheit bereits durch ein SPC gesperrt ist und später nicht weiter betrachtet werden darf.
                         if (fixedU((fesim%randbedingungen%mpcs(ii)%independend(jj)%nid-1)*ndof+fesim%randbedingungen%mpcs(ii)%independend(jj)%dof) .EQ. .TRUE.) then
                             fesim%randbedingungen%mpcs(ii)%independend(jj)%dof = -fesim%num_dof-1
@@ -106,13 +115,13 @@ end if
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,*)                      'boundary_mpc_control'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return
