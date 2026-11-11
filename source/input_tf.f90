@@ -1392,8 +1392,8 @@ if (fesim%is_mpc /= .false.) then
                         end if
                         fesim%randbedingungen%mpcs(ii)%mpc_type = 0 ! Set as external MPC
                         allocate(fesim%randbedingungen%mpcs(ii)%independend(1:num_master_dofs))
-                        write(form,'(A1,I2.2,A14)') '(', num_master_dofs, '(2I10,E23.16))'
-                        read (33,form,iostat=read_error) (fesim%randbedingungen%mpcs(ii)%independend(jj)%nid, fesim%randbedingungen%mpcs(ii)%independend(jj)%dof, fesim%randbedingungen%mpcs(ii)%independend(jj)%fac,jj=1,num_master_dofs)
+                        write(form2,'(A1,I5.5,A14)') '(', num_master_dofs, '(2I10,E23.16))'
+                        read (33,form2,iostat=read_error) (fesim%randbedingungen%mpcs(ii)%independend(jj)%nid, fesim%randbedingungen%mpcs(ii)%independend(jj)%dof, fesim%randbedingungen%mpcs(ii)%independend(jj)%fac,jj=1,num_master_dofs)
                         if (read_error /= 0) then
                                 write(*,*) 'Error reading file ', fname
                                 write(*,*) 'There was an error processing line', ii
