@@ -70,12 +70,6 @@ if (fesim%is_mpcadd == .true.) then
                 !do ii=1,size(mpcs,1)
                 ii = fesim%randbedingungen%mpcadds(gg)%sid
 
-                ! Skip, if mpc is temperature-type (dof==7), since fixedU is otherwise thrown off
-                if (fesim%randbedingungen%mpcs(ii)%dependend%dof == 7) then
-                    write(*,*) 'Skipping '
-                    cycle
-                end if
-
                 if (fesim%randbedingungen%mpcadds(gg)%sid .eq. fesim%randbedingungen%mpcs(ii)%sid) then
                     if (fixedU((fesim%randbedingungen%mpcs(ii)%dependend%nid-1)*ndof+fesim%randbedingungen%mpcs(ii)%dependend%dof) == .TRUE.) then
 

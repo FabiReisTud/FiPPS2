@@ -3,9 +3,9 @@
 !  static analyses as well as linearized stability analyses. It is inherently
 !  coupled to the open-source panel method APAME for providing fluid-structure-
 !  interaction capabilites.
-!    
+!
 !  Copyright (C) 2024 TUD Dresden University of Technology
-! 
+!
 !  This file is part of FiPPS².
 !
 !  FiPPS² is free software: you can redistribute it and/or modify
@@ -53,7 +53,7 @@ implicit none
 
 !
 ! =================================================================================================
-! 
+!
 ! Data types
 !
 ! Input
@@ -76,8 +76,12 @@ double precision, dimension(:,:), allocatable                   :: lvec
 integer, dimension(:), allocatable                              :: lvec_lcids
 integer                                                         :: pos
 
-integer                                                         :: jj,hh,neededLCNum
+integer                                                         :: ii,jj,hh,neededLCNum
 integer                                                         :: err_code=0
+
+! MPC - DISTRIBUTION
+integer                                                         :: indepNid,indepDof,indepInd
+double precision                                                :: depForce,indepFac,indepAdd
 
 ! Temporal
 double precision, dimension(:), allocatable                     :: pElem
@@ -118,39 +122,39 @@ do hh=1,size(fesim%lasten%loads,1)                                  ! Loop over 
     do pos = 1, size(lvec_lcids,1)                                  ! Loop over needed LoadCases
 
         if (fesim%lasten%loads(hh)%lcid .eq. lvec_lcids(pos)) then
-            
+
             ! Forces
-            
+
             if (fesim%is_force == .true.) then                      ! if forces exist
-                
+
                 call load_force(fesim,hh,lvec,pos)
-                
+
             end if
-            
+
             ! Moments
-            
+
             if (fesim%is_moment == .true.) then                     ! if moments exist
-                
+
                 call load_moment(fesim,hh,lvec,pos)
-                
+
             end if
-            
+
             ! p2loads auf beam2s
-            
+
             if (fesim%is_p2load == .true.) then                     ! if p2load exists
-                
+
                 call load_p2load(fesim,hh,lvec,pos,pElem)
-                
+
             end if
-            
+
             ! p8loads auf quad8s
-            
+
             if (fesim%is_p8load == .true.) then                     ! if p8load exist
-                
+
                 call load_p8load(fesim,hh,lvec,pos,pElem)
-                
+
             end if
-            
+
             ! p20loads auf lsolid20s
 
             if (fesim%is_p20load == .true.) then                    ! if p20load exists
@@ -158,11 +162,11 @@ do hh=1,size(fesim%lasten%loads,1)                                  ! Loop over 
                 call load_p20load(fesim,hh,lvec,pos,pElem)
 
             end if
-    
+
         end if
-    
+
     end do
-   
+
 end do
 
 if (fesim%ausgabe%outputVTK .eq. .true.) then
@@ -199,13 +203,63 @@ do jj=1,size(lvec_lcids,1)
                 Fout(hh) = Fout(hh) + lvec(hh,jj)
             endif
         else if (fesim%internals%num_dof_vec(hh) .LT. 0) then
-            write(*,*) 'Please define no nodal forces for nodes'
-            write(*,*) 'that are dependend nodes of an MPC, exit program'
-            write(*,*) 'NodeID ', hh/ndof
-            err_code=1
-            goto 9999
+            ! OLD IMPLEMENTATION
+!            write(*,*) 'Please define no nodal forces for nodes'
+!            write(*,*) 'that are dependend nodes of an MPC, exit program'
+!            write(*,*) 'NodeID ', hh/ndof
+!            Hier den lvec verteilen
+!            err_code=1
+!            goto 9999
+
+            ! DISTRIBUTE
+            depForce = lvec(hh,jj) ! Get force at dependend node
+!            write(*,*) '======================================='
+!            write(*,*) '      hh=',hh
+!            write(*,*) 'fesim%internals%num_dof_vec(',hh,')=',fesim%internals%num_dof_vec(hh)
+!            write(*,*) 'depForce=',depForce
+            if ((fesim%ausgabe%outputVTK .eq. .true.) .or. (fesim%ausgabe%outputUser .eq. .true.)) then
+                Fout(hh) = Fout(hh) + depForce
+            endif
+
+            do ii=1,size(fesim%randbedingungen%mpcs(-fesim%internals%num_dof_vec(hh))%independend)
+                ! Get values of independend node
+                indepNid = fesim%randbedingungen%mpcs(-fesim%internals%num_dof_vec(hh))%independend(ii)%nid
+!                write(*,*) 'indepNid=',indepNid
+                indepFac = fesim%randbedingungen%mpcs(-fesim%internals%num_dof_vec(hh))%independend(ii)%fac
+!                write(*,*) 'indepFac=',indepFac
+                indepDof = fesim%randbedingungen%mpcs(-fesim%internals%num_dof_vec(hh))%independend(ii)%dof
+!                write(*,*) 'indepDof=',indepDof
+                ! Calculate
+                indepInd = (indepNid-1)*ndof + indepDof ! Index of Independend-Node-Dof-Entry
+!                write(*,*) 'indepInd=',indepInd
+                indepAdd = depForce * indepFac          ! Force to be added to independed dof
+!                write(*,*) 'indepAdd=',indepAdd
+                ! Add
+!                write(*,*) 'Fa(indepInd)=',Fa(indepInd),' (before adding)'
+                Fa(indepInd) = Fa(indepInd) + indepAdd
+!                write(*,*) 'Fa(indepInd)=',Fa(indepInd),' (after adding)'
+                if ((fesim%ausgabe%outputVTK .eq. .true.) .or. (fesim%ausgabe%outputUser .eq. .true.)) then
+                    Fout(indepInd) = Fout(indepInd) + indepAdd
+                end if
+            end do
         end if
     end do
+
+!    write(*,*)''
+!    write(*,*)'================================='
+!    do hh=1,size(Fa)
+!        if (Fa(hh)*Fa(hh) .GT. 0.01) then ! Nur über 0.1 N ausschreiben
+!            write(*,*)'hh=',hh,' Fa=',Fa(hh),' num_dof_vec=',fesim%internals%num_dof_vec(hh)
+!        end if
+!    end do
+!    write(*,*)'================================='
+!    do hh=1,size(Fout)
+!        if (Fout(hh)*Fout(hh) .GT. 0.01) then ! Nur über 0.1 N ausschreiben
+!            write(*,*)'hh=',hh,' Fout=',Fout(hh),' num_dof_vec=',fesim%internals%num_dof_vec(hh)
+!        end if
+!    end do
+!    write(*,*)'================================='
+
 end do
 
 !
@@ -216,13 +270,13 @@ end do
 9999 continue
 
 if (err_code /= 0) then
-   
+
    write(*,*)                      'An error occured in subroutine'
    write(*,'(A)',advance='YES')    'load_loadvector'
    write(*,'(A,I2)',advance='YES') ' Errorcode: ', err_code
    write(*,*)                      'exit program '
    stop
-   
+
 end if
 
 return

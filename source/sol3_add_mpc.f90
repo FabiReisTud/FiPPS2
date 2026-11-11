@@ -112,6 +112,8 @@ call VecRestoreArrayF90(diag_vec, diag, ierr); CHKERRQ(ierr)
 call VecDestroy(diag_vec, ierr); CHKERRQ(ierr)
 pen = pen * 10000 ! Increase by a large number to ensure that penalty is large enough
 
+! Find the ids all mpcs with unique dependend nodes
+
 do ii=1,size(fesim%randbedingungen%mpcs)
     if (fesim%randbedingungen%mpcs(ii)%dependend%dof == 7) then ! Verify, that mpc is thermal type (dof==7)
         mpc_size = size(fesim%randbedingungen%mpcs(ii)%independend) + 1
