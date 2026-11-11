@@ -75,6 +75,7 @@ Mat,intent(inout)                   :: C !< C
 ! Internal
 !
 integer                             :: s_nid, mpc_size, m_size, m_nid
+logical, allocatable                :: s_nid_seen(:) ! Checks, whether a thermal mpc has been added for that s_nid already
 integer,allocatable                 :: a_indices(:)
 double precision                    :: m_weight, C_max
 double precision                    :: pen ! = penalty factor
@@ -94,6 +95,8 @@ PetscErrorCode                      :: ierr
 !
 ! Initialisation
 !
+allocate(diag(fesim%num_nodes),s_nid_seen(fesim%num_nodes))
+s_nid_seen = .false.
 !
 ! =================================================================================================
 !
@@ -101,7 +104,6 @@ PetscErrorCode                      :: ierr
 !
 ! Get penalty factor
 pen = 0. ! penalty multiplier
-allocate(diag(fesim%num_nodes))
 call MatCreateVecs(C, PETSC_NULL_VEC, diag_vec, ierr); CHKERRQ(ierr)
 call MatGetDiagonal(C,diag_vec,ierr); CHKERRQ(ierr)
 call VecGetArrayF90(diag_vec, diag, ierr); CHKERRQ(ierr)
@@ -115,7 +117,8 @@ pen = pen * 10000 ! Increase by a large number to ensure that penalty is large e
 ! Find the ids all mpcs with unique dependend nodes
 
 do ii=1,size(fesim%randbedingungen%mpcs)
-    if (fesim%randbedingungen%mpcs(ii)%dependend%dof == 7) then ! Verify, that mpc is thermal type (dof==7)
+    if (.not. s_nid_seen(fesim%randbedingungen%mpcs(ii)%dependend%nid)) then ! Only add penalties, if an mpc with that s_nid hasnt been processed already
+        s_nid_seen(fesim%randbedingungen%mpcs(ii)%dependend%nid) = .true.
         mpc_size = size(fesim%randbedingungen%mpcs(ii)%independend) + 1
         allocate(a_vals(mpc_size),a_indices(mpc_size))
         allocate(arr_penalty(mpc_size,mpc_size))
@@ -139,6 +142,8 @@ do ii=1,size(fesim%randbedingungen%mpcs)
         end do
         call MatSetValues(C, mpc_size, a_indices, mpc_size, a_indices, arr_penalty, ADD_VALUES, ierr); CHKERRQ(ierr)
         deallocate(a_vals,a_indices,arr_penalty)
+!    else
+!        write(*,*) 'MPC with ID=',fesim%randbedingungen%mpcs(ii)%sid,' s_id=',fesim%randbedingungen%mpcs(ii)%dependend%nid,' s_dof=',fesim%randbedingungen%mpcs(ii)%dependend%dof,' has been processed for thermal already!'
     end if
 end do
 
