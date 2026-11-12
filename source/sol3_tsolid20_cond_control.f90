@@ -88,11 +88,16 @@ double precision, dimension(20,3)   :: node_coords
 double precision, dimension(20,20)  :: tsolid20_C
 
 integer                             :: ii,jj, kk,ll,e,lsolid20Num,elemNum
-PetscInt                            :: nnodes_per_elem,nnodes_global
+PetscInt                            :: nnodes_per_elem,nnodes_global,mpc_size
+PetscInt                            :: d_nz,o_nz
 PetscInt, allocatable               :: d_nnz(:), o_nnz(:)
 integer                             :: err_code=0
 integer                             :: pid, tmidid
 type(thermal_curve_type)            :: k
+real                                :: t0,t1
+
+logical                             :: estimate=.TRUE.
+logical,allocatable                 :: s_id_seen(:) ! keeps track of whether an s_id has already had its m_ids added to d_nnz
 
 PetscMPIInt                         :: rank
 PetscErrorCode                      :: ierr
@@ -102,9 +107,11 @@ PetscErrorCode                      :: ierr
 ! Initialisation
 nnodes_per_elem=20
 nnodes_global = size(fesim%knoten%nodes)
-allocate(d_nnz(nnodes_global), o_nnz(nnodes_global))
-d_nnz = min(200,size(fesim%knoten%nodes))
-o_nnz = d_nnz
+allocate(d_nnz(nnodes_global), o_nnz(nnodes_global),s_id_seen(nnodes_global))
+d_nz  = min(124,nnodes_global) ! Neighborhood of 5x5x5 nodes - 1
+d_nz = 124
+d_nnz = d_nz
+s_id_seen = .FALSE.
 !
 !
 ! =================================================================================================
@@ -113,12 +120,29 @@ o_nnz = d_nnz
 !
 ! call MPI_Comm_rank(PETSC_COMM_WORLD,rank,ierr); CHKERRQ(ierr)
 
+! Add mpcs-independents to estimate of mpc-dependents
+do ii=1,size(fesim%randbedingungen%mpcs)
+    if (.not. s_id_seen(fesim%randbedingungen%mpcs(ii)%dependend%nid)) then
+        s_id_seen(fesim%randbedingungen%mpcs(ii)%dependend%nid) = .true.
+        mpc_size = size(fesim%randbedingungen%mpcs(ii)%independend) + 1
+        d_nnz(fesim%randbedingungen%mpcs(ii)%dependend%nid) = d_nnz(fesim%randbedingungen%mpcs(ii)%dependend%nid) + mpc_size ! Add an entry for each independent in the row of the dependent
+        do jj=1,size(fesim%randbedingungen%mpcs(ii)%independend)
+            d_nnz(fesim%randbedingungen%mpcs(ii)%independend(jj)%nid) = d_nnz(fesim%randbedingungen%mpcs(ii)%independend(jj)%nid) + mpc_size  ! Add one entry in the row of indep for the dep
+        end do
+    end if
+end do
+
+o_nz  = d_nz  ! effectively ignored for single-process-run
+o_nnz = d_nnz ! effectively ignored for single-process-run
+
+
 ! Create global conductivity matrix C
+call cpu_time(t0)
 call MatCreateAIJ(PETSC_COMM_SELF, &
                   PETSC_DECIDE, PETSC_DECIDE, &
                   nnodes_global, nnodes_global, &
-                  10, d_nnz, &
-                  10, o_nnz, &
+                  d_nz, d_nnz, &
+                  o_nz, o_nnz, &
                   C, ierr); CHKERRQ(ierr)
 call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr); CHKERRQ(ierr)
 !call MatSetOption(C, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE, ierr); CHKERRQ(ierr)
@@ -157,6 +181,9 @@ call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr); CHKERRQ
 !
 ! Cleanup
 deallocate(d_nnz, o_nnz)
+
+call cpu_time(t1)
+print *, 'Elapsed CPU time during C-Assembly = ', t1 - t0, ' seconds'
 ! =================================================================================================
 !
 ! Error handling
