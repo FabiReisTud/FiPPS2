@@ -65,6 +65,7 @@ use fesimulation_typen
   KSP                                   :: ksp
   PetscErrorCode                        :: ierr
   PC                                    :: prec
+  PetscMPIInt                           :: iterative_threshold = 5e5 !^= 4gb of ram
 
   integer                               :: err_code=0
 !
@@ -80,34 +81,39 @@ use fesimulation_typen
 !
 
   if (fesim%lasten%subcases(scloop)%upmats .eq. .true.) then
-    call KSPCreate(PETSC_COMM_WORLD,ksp,ierr); CHKERRQ(ierr)
-    call KSPSetOperators(ksp,K,K,ierr); CHKERRQ(ierr)
-    call KSPGetPC(ksp,prec,ierr); CHKERRQ(ierr)
 
-    if (fesim%num_dof .lt. 100000) then
+    if (fesim%num_dof .lt. iterative_threshold) then
         if (rank == 0) then
-            write(*,*) 'num_dof=',fesim%num_dof,' < 100000 --> setting up direct solver'
+            write(*,*) 'num_dof=',fesim%num_dof,' < ',iterative_threshold,'--> setting up direct solver'
         end if
+        call KSPCreate(PETSC_COMM_WORLD,ksp,ierr); CHKERRQ(ierr)
+        call KSPSetOperators(ksp,K,K,ierr); CHKERRQ(ierr)
+
         call KSPSetType(ksp,KSPPREONLY,ierr); CHKERRQ(ierr)
+        call KSPGetPC(ksp,prec,ierr); CHKERRQ(ierr)
         call PCSetType(prec,PCCHOLESKY,ierr); CHKERRQ(ierr)
+        ! Select MUMPS
         call PCFactorSetMatSolverType(prec,MATSOLVERMUMPS,ierr); CHKERRQ(ierr)
         call PCFactorSetUpMatSolverType(prec,ierr); CHKERRQ(ierr) ! notwendig, um die Methode MatMumpsSetIcntl ohne Fehler aufrufen zu können
-
-        call KSPSetErrorIfNotConverged(ksp,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
-        call PCSetErrorIfFailure(prec,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
+        ! Get the MUMPS matrix and set workspace
 !        call PCFactorGetMatrix(prec,mat,ierr); CHKERRQ(ierr) ! notwendig für die nachfolgende Methode
-!        call MatMumpsSetIcntl(mat,14,40,ierr); CHKERRQ(ierr) ! Erhöhung des Workspace für MUMPS, da es sonst Fehler gibt, kann auch über "-mat_mumps_icntl_14 50" direkt beim FiPPS Aufruf gesetzt werden
+!        call MatMumpsSetIcntl(mat,14,50,ierr); CHKERRQ(ierr) ! Erhöhung des Workspace für MUMPS, da es sonst Fehler gibt, kann auch über "-mat_mumps_icntl_14 50" direkt beim FiPPS Aufruf gesetzt werden
+        ! Error handling
+        call KSPSetErrorIfNotConverged(ksp,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler
+        call PCSetErrorIfFailure(prec,PETSC_TRUE,ierr); CHKERRQ(ierr) ! Wenn der Workspace für MUMPS nicht ausreicht wirft PETSC 3.7.6 sonst keinen Fehler! Set cmd-line options
+        call KSPSetFromOptions(ksp,ierr); CHKERRQ(ierr)
     else
         if (rank == 0) then
-            write(*,*) 'num_dof=',fesim%num_dof,' >= 100000 --> setting up iterative solver'
+            write(*,*) 'num_dof=',fesim%num_dof,' >= ',iterative_threshold,'--> setting up iterative solver'
         end if
+        call KSPCreate(PETSC_COMM_WORLD,ksp,ierr); CHKERRQ(ierr)
+        call KSPSetOperators(ksp,K,K,ierr); CHKERRQ(ierr)
+        call KSPGetPC(ksp,prec,ierr); CHKERRQ(ierr)
         call KSPSetType(ksp,KSPCG,ierr); CHKERRQ(ierr)
         call PCSetType(prec,PCBJACOBI,ierr); CHKERRQ(ierr)
         call KSPSetTolerances(ksp,1.0d-8,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,1000,ierr); CHKERRQ(ierr)
+        call KSPSetFromOptions(ksp,ierr); CHKERRQ(ierr)
     end if
-
-
-    call KSPSetFromOptions(ksp,ierr); CHKERRQ(ierr)
   end if
 
  ! Solution
