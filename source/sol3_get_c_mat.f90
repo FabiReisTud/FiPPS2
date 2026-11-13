@@ -32,7 +32,7 @@
 !> @author Fabian Reisener, TU Dresden, WM 2026
 !
 ! =================================================================================================
-subroutine sol3_tsolid20_cond_control(fesim,C)
+subroutine sol3_get_c_mat(fesim,C)
 ! =================================================================================================
 ! Use
 !
@@ -96,7 +96,13 @@ integer                             :: pid, tmidid
 type(thermal_curve_type)            :: k
 real                                :: t0,t1
 
-logical                             :: estimate=.TRUE.
+!MPC
+PetscReal                           :: mpc_pen=0.d0
+PetscInt                            :: max_mpc_size
+PetscInt,allocatable                :: a_indices(:)
+PetscReal,allocatable               :: a_vals(:),arr_penalty(:,:)
+
+
 logical,allocatable                 :: s_id_seen(:) ! keeps track of whether an s_id has already had its m_ids added to d_nnz
 
 PetscMPIInt                         :: rank
@@ -144,9 +150,7 @@ call MatCreateAIJ(PETSC_COMM_SELF, &
                   d_nz, d_nnz, &
                   o_nz, o_nnz, &
                   C, ierr); CHKERRQ(ierr)
-call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr); CHKERRQ(ierr)
-!call MatSetOption(C, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE, ierr); CHKERRQ(ierr)
-!call MatSetOption(C, MAT_ROW_ORIENTED, PETSC_FALSE, ierr); CHKERRQ(ierr)
+call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE, ierr); CHKERRQ(ierr)
 
 ! Iter through all the elements
  do jj = 1,size(fesim%elemente%lsolid20s,1)
@@ -172,8 +176,52 @@ call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr); CHKERRQ
 
     ! Get local tsolid20_C-Matrix
     call sol3_tsolid20_cond(fesim,node_coords,node_ids,lsolid20Num,elemNum,k,tsolid20_C)
+
+    ! Get penalty
+    mpc_pen = max(mpc_pen,maxval(abs(tsolid20_C)))
     call MatSetValues(C,20,node_ids-1,20,node_ids-1,tsolid20_C,ADD_VALUES,ierr); CHKERRQ(ierr)
  end do
+
+write(*,*) 'Adding the Penalty-MPC-Contributions to the C-Matrix'
+!!!!!!!!!!! Add Penalty-MPC-contributions to the C-Vector
+mpc_pen = mpc_pen * 10000 ! increase max element stiffness by xxx
+s_id_seen = .false.
+! Determine max mpc size
+max_mpc_size = 1
+do ii = 1, size(fesim%randbedingungen%mpcs)
+    max_mpc_size = max(max_mpc_size, size(fesim%randbedingungen%mpcs(ii)%independend) + 1)
+end do
+! Allocate
+allocate(a_vals(max_mpc_size), a_indices(max_mpc_size), arr_penalty(max_mpc_size, max_mpc_size))
+
+! Iter through all mpcs
+do ii=1,size(fesim%randbedingungen%mpcs)
+    if (.not. s_id_seen(fesim%randbedingungen%mpcs(ii)%dependend%nid)) then
+        s_id_seen(fesim%randbedingungen%mpcs(ii)%dependend%nid) = .true.
+        mpc_size = size(fesim%randbedingungen%mpcs(ii)%independend) + 1
+        a_vals(1:mpc_size) = 0.d0
+        a_indices(1:mpc_size) = 0
+        arr_penalty(1:mpc_size, 1:mpc_size) = 0.d0
+
+        a_vals(1) = fesim%randbedingungen%mpcs(ii)%dependend%fac
+        a_indices(1) = fesim%randbedingungen%mpcs(ii)%dependend%nid
+
+        do jj=1,size(fesim%randbedingungen%mpcs(ii)%independend)
+            a_indices(jj+1) = fesim%randbedingungen%mpcs(ii)%independend(jj)%nid
+            a_vals(jj+1)    = fesim%randbedingungen%mpcs(ii)%independend(jj)%fac
+        end do
+        a_indices = a_indices - 1 ! Set to 0-based indices for petsc
+
+        arr_penalty(1:mpc_size,1:mpc_size) = mpc_pen *  spread(a_vals(1:mpc_size), dim=2, ncopies=mpc_size) * &
+                                                        spread(a_vals(1:mpc_size), dim=1, ncopies=mpc_size)
+
+        call MatSetValues(C, mpc_size, a_indices(1:mpc_size), mpc_size, a_indices(1:mpc_size), arr_penalty(1:mpc_size, 1:mpc_size), ADD_VALUES, ierr); CHKERRQ(ierr)
+    end if
+end do
+deallocate(a_vals,a_indices,arr_penalty)
+
+write(*,*) 'Finished the Penalty-MPC-Contributions to the C-Matrix'
+
 
 ! Finalize global assembly
  call MatAssemblyBegin(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)

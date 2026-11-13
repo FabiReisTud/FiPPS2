@@ -97,13 +97,13 @@ interface
     IS, intent(out)                 :: is_free, is_bc
   end subroutine sol3_get_dof_is
 
-  subroutine sol3_tsolid20_cond_control(fesim,C)
+  subroutine sol3_get_c_mat(fesim,C)
     use fesimulation_typen
     use petscmat
     implicit none
     type(fe_simulation), intent(in) :: fesim
     Mat,intent(out)                 :: C
-  end subroutine sol3_tsolid20_cond_control
+  end subroutine sol3_get_c_mat
 
   subroutine sol3_get_q_vec(fesim,q,qf,qc,is_free,is_bc)
       use fesimulation_typen
@@ -123,15 +123,6 @@ interface
       Vec,intent(out)                   :: Tf,Tc
       IS,intent(inout)                  :: is_free,is_bc
   end subroutine
-
-  subroutine sol3_add_mpc(fesim,C)
-    use fesimulation_typen
-    use globale_variablen
-    use petscmat
-    use petscvec
-    type(fe_simulation), intent(in)     :: fesim
-    Mat,intent(inout)                   :: C !< C
-  end subroutine
 end interface
 ! =================================================================================================
 !
@@ -149,12 +140,8 @@ end interface
   write(*,*) 'Finished the getting of the dof index set'
 ! Assemble C-Matrix
   write(*,*) 'Starting the assembly of the global conduction matrix'
-  call sol3_tsolid20_cond_control(fesim,C)
+  call sol3_get_c_mat(fesim,C)
   write(*,*) 'Finished the assembly of the global conduction matrix'
-! Add Penalty-MPC-contributions to the C-Vector
-  write(*,*) 'Adding the Penalty-MPC-Contributions to the C-Matrix'
-  call sol3_add_mpc(fesim,C)
-  write(*,*) 'Finished the Penalty-MPC-Contributions to the C-Matrix'
 ! Get C-submatrices
   call MatCreateSubMatrix(C, is_free, is_free, MAT_INITIAL_MATRIX, Cff, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
