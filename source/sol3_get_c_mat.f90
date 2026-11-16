@@ -143,7 +143,6 @@ o_nnz = d_nnz ! effectively ignored for single-process-run
 
 
 ! Create global conductivity matrix C
-call cpu_time(t0)
 call MatCreateAIJ(PETSC_COMM_SELF, &
                   PETSC_DECIDE, PETSC_DECIDE, &
                   nnodes_global, nnodes_global, &
@@ -153,7 +152,8 @@ call MatCreateAIJ(PETSC_COMM_SELF, &
 call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE, ierr); CHKERRQ(ierr)
 
 ! Iter through all the elements
- do jj = 1,size(fesim%elemente%lsolid20s,1)
+! Solid20s
+do jj = 1,size(fesim%elemente%lsolid20s,1)
     if (mpi_lsolid20_proc_dist(jj) .NE. rank) cycle
     lsolid20Num = fesim%elemente%lsolid20s(jj)%eid
     pid = fesim%elemente%lsolid20s(jj)%pid ! PropertyID des Elements
@@ -180,7 +180,13 @@ call MatSetOption(C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE, ierr); CHKERRQ(
     ! Get penalty
     mpc_pen = max(mpc_pen,maxval(abs(tsolid20_C)))
     call MatSetValues(C,20,node_ids-1,20,node_ids-1,tsolid20_C,ADD_VALUES,ierr); CHKERRQ(ierr)
- end do
+end do
+
+! QUAD8s
+
+
+! BEAM2s
+
 
 write(*,*) 'Adding the Penalty-MPC-Contributions to the C-Matrix'
 !!!!!!!!!!! Add Penalty-MPC-contributions to the C-Vector
@@ -230,8 +236,6 @@ write(*,*) 'Finished the Penalty-MPC-Contributions to the C-Matrix'
 ! Cleanup
 deallocate(d_nnz, o_nnz)
 
-call cpu_time(t1)
-print *, 'Elapsed CPU time during C-Assembly = ', t1 - t0, ' seconds'
 ! =================================================================================================
 !
 ! Error handling
