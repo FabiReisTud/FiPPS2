@@ -68,6 +68,7 @@ integer                                :: ii, jj, j1, j2, nid
 integer, dimension(:),allocatable      :: node_ids
 logical, dimension(:),allocatable      :: temp_flag
 double precision                       :: T_ref
+character(100)                         :: field_name,tmp
 
 integer                                :: err_code=0
 !
@@ -171,6 +172,12 @@ end if
 
  deallocate(temp_flag)
 
+if (fesim%ausgabe%outputVTK .eqv. .true.) then
+    ! Write nodal temperature to vtk
+    write(tmp, '(F10.1)') T_ref
+    write(field_name, '(A,A,A)') 'T(Tref=', trim(adjustl(tmp)), ')'
+    call vtkoutpointscalar(nodal_temperatures+T_ref, fesim%num_nodes, field_name)
+endif
 !
 ! =================================================================================================
 !

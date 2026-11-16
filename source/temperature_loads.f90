@@ -96,10 +96,6 @@ use fesimulation_typen
   ! Get nodal temperature at every node
   if (fesim%is_temperature .eqv. .true.) then
     call get_node_temperatures(fesim, lcID, nodal_temperatures)
-    if (fesim%ausgabe%outputVTK .eqv. .true.) then
-      ! Write nodal temperature to vtk
-      call vtkoutpointscalar(nodal_temperatures, fesim%num_nodes, 'Temperatur-Tref')
-    endif
   end if
 !
   ! Get elemental temperatures at beam2 elements
