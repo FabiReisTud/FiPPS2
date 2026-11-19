@@ -66,6 +66,7 @@ PetscScalar, pointer                :: vec_array(:)
 double precision,allocatable        :: T_new(:)
 character(100)                      :: fname
 double precision                    :: eps
+logical                             :: writee = .false.
 !
 ! =================================================================================================
 !
@@ -103,12 +104,13 @@ T_new = vec_array
 call VecRestoreArrayF90(T, vec_array, ierr); CHKERRQ(ierr) ! Restore
 
 !!!!! Output to VTK
-write(fname, '("output_thermal_", I0, ".vtk")') fesim%thermal%iteration
-call vtkoutprep(fname)               ! VTK-Datei öffnen und vorbereiten
-call vtkoutmesh(fesim)                              ! Write mesh
-
-! Write T_new to the VTK
-call vtkoutpointscalar(T_new, fesim%num_nodes, 'temperature')
+if (writee) then
+    write(fname, '("output_thermal_", I0, ".vtk")') fesim%thermal%iteration
+    call vtkoutprep(fname)               ! VTK-Datei öffnen und vorbereiten
+    call vtkoutmesh(fesim)                              ! Write mesh
+    ! Write T_new to the VTK
+    call vtkoutpointscalar(T_new, fesim%num_nodes, 'temperature')
+end if
 
 !!!!! Check for Convergence
 if (fesim%thermal%iterative .AND. fesim%thermal%iteration>=2) then
