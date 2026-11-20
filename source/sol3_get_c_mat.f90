@@ -115,7 +115,6 @@ nnodes_per_elem=20
 nnodes_global = size(fesim%knoten%nodes)
 allocate(d_nnz(nnodes_global), o_nnz(nnodes_global),s_id_seen(nnodes_global))
 d_nz  = min(124,nnodes_global) ! Neighborhood of 5x5x5 nodes - 1
-d_nz = 124
 d_nnz = d_nz
 s_id_seen = .FALSE.
 !
