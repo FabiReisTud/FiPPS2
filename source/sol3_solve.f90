@@ -61,7 +61,7 @@ PC                                  :: prec     ! precondition context
 PetscErrorCode                      :: ierr
 PetscReal                           :: tol=1e-5
 PetscViewer                         :: viewer
-logical                             :: writee=.TRUE.
+logical                             :: writee=.FALSE.
 Vec                                 :: residual
 PetscReal                           :: rnorm,rhsnorm
 !

@@ -105,12 +105,13 @@ interface
     Mat,intent(out)                 :: C
   end subroutine sol3_get_c_mat
 
-  subroutine sol3_get_q_vec(fesim,q,qf,qc,is_free,is_bc)
+  subroutine sol3_get_q_vec(fesim,C,q,qf,qc,is_free,is_bc)
       use fesimulation_typen
       use petscvec
       use petscmat
       use petscis
       type(fe_simulation), intent(in)   :: fesim
+      Mat,intent(inout)                 :: C
       Vec,intent(out)                   :: q,qf,qc
       IS                                :: is_free,is_bc
   end subroutine
@@ -142,15 +143,15 @@ end interface
   write(*,*) 'Starting the assembly of the global conduction matrix'
   call sol3_get_c_mat(fesim,C)
   write(*,*) 'Finished the assembly of the global conduction matrix'
+! Get Q, Qf-, Qc-Vector
+  write(*,*) 'Starting the assembly of the q vector'
+  call sol3_get_q_vec(fesim,C,Q,Qf,Qc,is_free,is_bc)
+  write(*,*) 'Finished the assembly of the q vector'
 ! Get C-submatrices
   call MatCreateSubMatrix(C, is_free, is_free, MAT_INITIAL_MATRIX, Cff, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_free, is_bc,   MAT_INITIAL_MATRIX, Cfc, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_bc,   is_free, MAT_INITIAL_MATRIX, Ccf, ierr); CHKERRQ(ierr)
   call MatCreateSubMatrix(C, is_bc,   is_bc,   MAT_INITIAL_MATRIX, Ccc, ierr); CHKERRQ(ierr)
-! Get Q, Qf-, Qc-Vector
-  write(*,*) 'Starting the assembly of the q vector'
-  call sol3_get_q_vec(fesim,Q,Qf,Qc,is_free,is_bc)
-  write(*,*) 'Finished the assembly of the q vector'
 ! Get T, Tc-Vectors
   write(*,*) 'Starting the assembly of the T vector'
   call sol3_get_t_vec(fesim,Tf,Tc,is_free,is_bc)

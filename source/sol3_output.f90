@@ -66,7 +66,7 @@ PetscScalar, pointer                :: vec_array(:)
 double precision,allocatable        :: T_new(:)
 character(100)                      :: fname
 double precision                    :: eps
-logical                             :: writee = .TRUE.
+logical                             :: writee = .FALSE.
 !
 ! =================================================================================================
 !

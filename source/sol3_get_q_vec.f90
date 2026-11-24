@@ -29,7 +29,7 @@
 !> @author Fabian Reisener, TU Dresden, WM 2026
 !
 ! =================================================================================================
-subroutine sol3_get_q_vec(fesim,q,qf,qc,is_free,is_bc)
+subroutine sol3_get_q_vec(fesim,C,q,qf,qc,is_free,is_bc)
 !=================================================================================================
 use fesimulation_typen
 #include "petsc/finclude/petscvec.h"
@@ -45,6 +45,8 @@ use integration_schemes
 
 implicit none
 
+! Inout
+Mat,intent(inout)               :: C
 ! Input
 type(fe_simulation), intent(in) :: fesim
 IS                              :: is_free,is_bc
@@ -53,7 +55,7 @@ Vec, intent(out)                :: q,qf,qc
 ! Internal
 PetscErrorCode                  :: ierr
 PetscMPIInt                     :: rank
-integer                         :: ii, jj,ip,np, node_id
+integer                         :: ii,jj,kk,ip,np, node_id
 integer                         :: nsize
 double precision                :: q_flux,q_local(8)
 double precision, allocatable   :: q_array(:)
@@ -66,6 +68,8 @@ Vec                             :: qf_view, qc_view ! intermediary vectors for c
 double precision                :: w_ip,xi_ip(4),eta_ip(4),w_xi(4),w_eta(4)
 double precision                :: Ni(8),dNidxi(8),dNideta(8),detJ
 double precision                :: node_coords(8,3)
+double precision                :: h_conv, T_amb
+double precision                :: H_local(8,8)
 
 ! Internal - writing
 logical                         :: writee = .FALSE.
@@ -74,9 +78,7 @@ PetscViewer                     :: viewer
 
 interface
     subroutine quad8_ansatzfunction_xieta(xi, eta, Ni, dNidxi, dNideta,d2Nidxi2, d2Nidxideta, d2Nidetadxi, d2Nideta2)
-
         double precision, intent(in) :: xi, eta
-
         double precision, dimension(8), optional, intent(out) :: Ni
         double precision, dimension(8), optional, intent(out) :: dNidxi, dNideta
         double precision, dimension(8), optional, intent(out) :: d2Nidxi2, d2Nidxideta, d2Nidetadxi, d2Nideta2
@@ -154,7 +156,10 @@ do ii = 1, size(fesim%thermal%convections)
     node_ids(8) = fesim%thermal%convections(ii)%nid8
 
     !!! Compute local flux contributions
+    h_conv  = fesim%thermal%convections(ii)%h
+    T_amb   = fesim%thermal%convections(ii)%T_amb
     q_local = 0.d0 ! Init the local q-contribution-vector
+    H_local = 0.d0 ! Init the local H-contribution-vector, which will be later added to the C-Matrix
     T_nodes = fesim%thermal%tref ! Init the node-temperature-vector
     ! Get coordinates of the eight surface nodes, get their temperature
     do jj = 1, 8
@@ -166,32 +171,34 @@ do ii = 1, size(fesim%thermal%convections)
 
     call integration_points_2d( 2, "Gauss",   xi_ip, w_xi, 2, "Gauss",  eta_ip, w_eta)
     do ip=1,4   ! Integrate by iterating through all Integration Points
-
-        ! Add IP-contribution to integral
         w_ip = w_xi(ip)*w_eta(ip)
         call quad8_ansatzfunction_xieta(xi_ip(ip), eta_ip(ip), Ni, dNidxi,dNideta)
-        detJ = j_s(xi_ip(ip),eta_ip(ip),node_coords) ! area scaling factor
-        ! Get ip temperature
-        T_ip = 0.d0
+        detJ = j_s(xi_ip(ip),eta_ip(ip),node_coords) ! determinante of Jacobi Matrix
+
+        ! RHS-contribution of Convective Boundary Condition
+        q_flux = h_conv * T_amb ! T_ip > T_amb -> q_flux<0 -> heat is added to the element
+        q_local = q_local + Ni * q_flux * detJ * w_ip ! Add IP-contribution to local q-Vector on the RHS
+
+        ! Assemble LHS-contribution of Convective Boundary Condition
         do jj=1,8
-            T_ip = T_ip + Ni(jj) * T_nodes(jj)
+            do kk=1,8
+                H_local(jj,kk) = H_local(jj,kk) + h_conv*Ni(jj)*Ni(kk)*detJ*w_ip
+            end do
         end do
-        ! Set q_flux according to temperature
-        q_flux = - fesim%thermal%convections(ii)%h * (T_ip - fesim%thermal%convections(ii)%T_amb) ! T_ip > T_amb -> q_flux<0 -> heat is added to the element
-        ! Add IP-contribution to local q-Vector
-        q_local = q_local + Ni * q_flux * detJ * w_ip
+
     end do
+    ! Add to Array for RHS-Vector
     do jj = 1, 8
         q_array(node_ids(jj)) = q_array(node_ids(jj)) + q_local(jj)
     end do
+
+    ! Add LHS-contribution to C-Matrix directly
+    call MatSetValues(C,8,node_ids-1,8,node_ids-1,H_local,ADD_VALUES,ierr); CHKERRQ(ierr)
 end do
 
 ! =================================================================================================
-!
-! Set values into PETSc vector q
-!
+! Transport the q_array into PETSc vector q at q_indices
 call VecSetValues(q, nsize, q_indices, q_array, INSERT_VALUES, ierr); CHKERRQ(ierr)
-
 ! Assemble q-vector
 call VecAssemblyBegin(q, ierr); CHKERRQ(ierr)
 call VecAssemblyEnd(q, ierr); CHKERRQ(ierr)
@@ -201,25 +208,25 @@ if (writee) then
     call VecView(q, viewer, ierr)
     call PetscViewerDestroy(viewer, ierr)
 end if
-
-
-! Get Qf
+! Get qf
 call VecGetSubVector(q,is_free,qf_view,ierr); CHKERRQ(ierr)
 call VecDuplicate(qf_view,qf,ierr); CHKERRQ(ierr)
 call VecCopy(qf_view,qf,ierr); CHKERRQ(ierr)
 call VecRestoreSubVector(q,is_free,qf_view,ierr); CHKERRQ(ierr)
 call VecDestroy(qf_view,ierr); CHKERRQ(ierr)
-
-! Get Qc
+! Get qc
 call VecGetSubVector(q,is_bc,qc_view,ierr); CHKERRQ(ierr)
 call VecDuplicate(qc_view,qc,ierr); CHKERRQ(ierr)
 call VecCopy(qc_view,qc,ierr); CHKERRQ(ierr)
 call VecRestoreSubVector(q,is_bc,qc_view,ierr); CHKERRQ(ierr)
 call VecDestroy(qc_view,ierr); CHKERRQ(ierr)
-
 ! Deallocate temporaries
 deallocate(q_array)
 deallocate(q_indices)
+
+! C-Mat-Assembly
+call MatAssemblyBegin(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
+call MatAssemblyEnd(C, MAT_FINAL_ASSEMBLY, ierr); CHKERRQ(ierr)
 
 return
 
