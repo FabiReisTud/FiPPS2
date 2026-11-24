@@ -61,10 +61,16 @@ double precision                :: T_ip, T_nodes(8)
 integer, allocatable            :: q_indices(:)
 integer, dimension(8)           :: node_ids
 PetscInt                        :: is_bc_size, is_free_size
+Vec                             :: qf_view, qc_view ! intermediary vectors for copying from q
 ! Internal - Numerical Integration
 double precision                :: w_ip,xi_ip(4),eta_ip(4),w_xi(4),w_eta(4)
 double precision                :: Ni(8),dNidxi(8),dNideta(8),detJ
 double precision                :: node_coords(8,3)
+
+! Internal - writing
+logical                         :: writee = .FALSE.
+character(10)                   :: fname ! Q_001.txt - Q_999.txt
+PetscViewer                     :: viewer
 
 interface
     subroutine quad8_ansatzfunction_xieta(xi, eta, Ni, dNidxi, dNideta,d2Nidxi2, d2Nidxideta, d2Nidetadxi, d2Nideta2)
@@ -153,7 +159,7 @@ do ii = 1, size(fesim%thermal%convections)
     ! Get coordinates of the eight surface nodes, get their temperature
     do jj = 1, 8
         node_coords(jj,:) = fesim%knoten%nodes(node_ids(jj))%coords
-        if (allocated(fesim%thermal%temperature)) then
+        if (fesim%thermal%iteration .GT. 1) then
             T_nodes(jj) = fesim%thermal%temperature(node_ids(jj))
         end if
     end do
@@ -171,7 +177,7 @@ do ii = 1, size(fesim%thermal%convections)
             T_ip = T_ip + Ni(jj) * T_nodes(jj)
         end do
         ! Set q_flux according to temperature
-        q_flux = - fesim%thermal%convections(ii)%h * (fesim%thermal%convections(ii)%T_amb - T_ip)
+        q_flux = - fesim%thermal%convections(ii)%h * (T_ip - fesim%thermal%convections(ii)%T_amb) ! T_ip > T_amb -> q_flux<0 -> heat is added to the element
         ! Add IP-contribution to local q-Vector
         q_local = q_local + Ni * q_flux * detJ * w_ip
     end do
@@ -186,29 +192,30 @@ end do
 !
 call VecSetValues(q, nsize, q_indices, q_array, INSERT_VALUES, ierr); CHKERRQ(ierr)
 
-! Assemble vector
+! Assemble q-vector
 call VecAssemblyBegin(q, ierr); CHKERRQ(ierr)
 call VecAssemblyEnd(q, ierr); CHKERRQ(ierr)
+if (writee) then
+    write(fname, '(A,I0,A)') 'Q_',fesim%thermal%iteration,'.txt'
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, fname, viewer, ierr)
+    call VecView(q, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+end if
+
 
 ! Get Qf
-call ISGetSize(is_free,is_free_size,ierr); CHKERRQ(ierr)
-call VecCreate(PETSC_COMM_SELF,qf,ierr); CHKERRQ(ierr)
-call VecSetSizes(qf, PETSC_DECIDE, is_free_size, ierr); CHKERRQ(ierr)
-call VecSetFromOptions(qf, ierr); CHKERRQ(ierr)
-call VecGetSubvector(q,is_free,qf,ierr); CHKERRQ(ierr)
-call VecAssemblyBegin(qf, ierr); CHKERRQ(ierr)
-call VecAssemblyEnd(qf, ierr); CHKERRQ(ierr)
-!call VecView(qf, PETSC_VIEWER_STDOUT_SELF, ierr); CHKERRQ(ierr)
+call VecGetSubVector(q,is_free,qf_view,ierr); CHKERRQ(ierr)
+call VecDuplicate(qf_view,qf,ierr); CHKERRQ(ierr)
+call VecCopy(qf_view,qf,ierr); CHKERRQ(ierr)
+call VecRestoreSubVector(q,is_free,qf_view,ierr); CHKERRQ(ierr)
+call VecDestroy(qf_view,ierr); CHKERRQ(ierr)
 
 ! Get Qc
-call ISGetSize(is_bc,is_bc_size,ierr); CHKERRQ(ierr)
-call VecCreate(PETSC_COMM_SELF,qc,ierr); CHKERRQ(ierr)
-call VecSetSizes(qc, PETSC_DECIDE, is_bc_size, ierr); CHKERRQ(ierr)
-call VecSetFromOptions(qc, ierr); CHKERRQ(ierr)
-call VecGetSubvector(q,is_bc,qc,ierr); CHKERRQ(ierr)
-call VecAssemblyBegin(qc, ierr); CHKERRQ(ierr)
-call VecAssemblyEnd(qc, ierr); CHKERRQ(ierr)
-!call VecView(qc, PETSC_VIEWER_STDOUT_SELF, ierr); CHKERRQ(ierr)
+call VecGetSubVector(q,is_bc,qc_view,ierr); CHKERRQ(ierr)
+call VecDuplicate(qc_view,qc,ierr); CHKERRQ(ierr)
+call VecCopy(qc_view,qc,ierr); CHKERRQ(ierr)
+call VecRestoreSubVector(q,is_bc,qc_view,ierr); CHKERRQ(ierr)
+call VecDestroy(qc_view,ierr); CHKERRQ(ierr)
 
 ! Deallocate temporaries
 deallocate(q_array)
@@ -243,8 +250,6 @@ function j_s(xi, eta, coords) result(detJ)
 
     ! Surface Jacobian determinant (area scaling factor), eq. (3.5.3) in Reddy, p.97
     detJ = sqrt(sum(cross**2))
-    write(*,*) 'detJ=',detJ
-
 end function j_s
 
 

@@ -305,12 +305,20 @@ end interface
             write(*,*) 'Starting thermal output'
             call sol3_output(fesim,Tf,Tc,is_free,is_bc)
             write(*,*) 'Finished thermal output'
-            ! Destroy thermal matrices and Vectors
-            call VecDestroy(T,ierr)
-            call VecDestroy(Tf,ierr)
-            call VecDestroy(Tc,ierr)
-            call VecDestroy(Q,ierr)
-            call MatDestroy(C,ierr)
+            ! Destroy thermal matrices, Vectors and IndexSets
+            call VecDestroy(Tf,ierr); CHKERRA(ierr)
+            call VecDestroy(Tc,ierr); CHKERRA(ierr)
+            call VecDestroy(Qf,ierr); CHKERRA(ierr)
+            call VecDestroy(Qc,ierr); CHKERRA(ierr)
+            call VecDestroy(Q,ierr); CHKERRA(ierr)
+            call MatDestroy(Cff,ierr); CHKERRA(ierr)
+            call MatDestroy(Cfc,ierr); CHKERRA(ierr)
+            call MatDestroy(Ccf,ierr); CHKERRA(ierr)
+            call MatDestroy(Ccc,ierr); CHKERRA(ierr)
+            call MatDestroy(C,ierr); CHKERRA(ierr)
+            call ISDestroy(is_free,ierr); CHKERRA(ierr)
+            call ISDestroy(is_bc,ierr); CHKERRA(ierr)
+
             ii = ii + 1
             write(*,*) '====FINISHED THERMAL ITERATION NR ',fesim%thermal%iteration,'===='
         end do
