@@ -70,7 +70,7 @@ subroutine sol3_assemble(fesim,Tf,Tc,Q,Qf,Qc,C,Cff,Cfc,Ccf,Ccc,is_free,is_bc)
   PetscViewer                       :: viewer
 ! Internal other
   integer                           :: err_code=0
-  logical                           :: write=.FALSE.
+  logical                           :: writee=.TRUE.
   PetscInt                          :: is_free_size,is_bc_size
   double precision                  :: C_max
 !
@@ -157,7 +157,8 @@ end interface
   write(*,*) 'Finished the assembly of the T vector'
 
 ! Write the Matrices and Vectors, if requested
-  if (write) then
+  if (writee) then
+    write(*,*) 'Starting export of thermal matrices and vectors'
     ! Export is_bc
     call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'IS_bc.txt', viewer, ierr)
     call ISView(is_bc,viewer,ierr)
@@ -169,7 +170,6 @@ end interface
     call PetscViewerDestroy(viewer, ierr)
 
     ! Matrices and vectors
-    write(*,*) 'Starting export of thermal matrices and vectors'
     call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'C.txt', viewer, ierr)
     call MatView(C, viewer, ierr)
     call PetscViewerDestroy(viewer, ierr)

@@ -126,14 +126,13 @@ do ii = 1, size(fesim%thermal%fluxes)
         w_ip = w_xi(ip)*w_eta(ip)
         call quad8_ansatzfunction_xieta(xi_ip(ip), eta_ip(ip), Ni, dNidxi,dNideta)
         detJ = j_s(xi_ip(ip),eta_ip(ip),node_coords) ! area scaling factor
-        q_local = q_local + Ni * q_flux * detJ * w_ip
+        q_local = q_local + q_flux * Ni * detJ * w_ip
     end do
 
     do jj = 1, 8
         q_array(node_ids(jj)) = q_array(node_ids(jj)) + q_local(jj)
     end do
 end do
-
 ! =================================================================================================
 !
 ! Assemble convection BC contributions
@@ -176,7 +175,6 @@ do ii = 1, size(fesim%thermal%convections)
         ! Add IP-contribution to local q-Vector
         q_local = q_local + Ni * q_flux * detJ * w_ip
     end do
-
     do jj = 1, 8
         q_array(node_ids(jj)) = q_array(node_ids(jj)) + q_local(jj)
     end do
@@ -229,28 +227,23 @@ function j_s(xi, eta, coords) result(detJ)
 
     double precision :: Ni(8)
     double precision :: dNidxi(8), dNideta(8)
-    double precision :: dx_dxi(3), dx_deta(3)
+    double precision :: e1(3), e2(3)
     double precision :: cross(3)
 
-    call quad8_ansatzfunction_xieta( &
-        xi, eta, Ni, dNidxi, dNideta)
+    call quad8_ansatzfunction_xieta(xi, eta, Ni, dNidxi, dNideta)
 
-    ! Tangent vectors of the surface
-    dx_dxi  = matmul(dNidxi,  coords)
-    dx_deta = matmul(dNideta, coords)
+    ! Tangent vectors of the surface, eq. (3.5.5) in Reddy, p.97
+    e1 = matmul(dNidxi,  coords)
+    e2 = matmul(dNideta, coords)
 
     ! Cross product
-    cross(1) = dx_dxi(2)*dx_deta(3) &
-             - dx_dxi(3)*dx_deta(2)
+    cross(1) = e1(2)*e2(3) - e1(3)*e2(2)
+    cross(2) = e1(3)*e2(1) - e1(1)*e2(3)
+    cross(3) = e1(1)*e2(2) - e1(2)*e2(1)
 
-    cross(2) = dx_dxi(3)*dx_deta(1) &
-             - dx_dxi(1)*dx_deta(3)
-
-    cross(3) = dx_dxi(1)*dx_deta(2) &
-             - dx_dxi(2)*dx_deta(1)
-
-    ! Surface Jacobian determinant (area scaling factor)
+    ! Surface Jacobian determinant (area scaling factor), eq. (3.5.3) in Reddy, p.97
     detJ = sqrt(sum(cross**2))
+    write(*,*) 'detJ=',detJ
 
 end function j_s
 

@@ -129,7 +129,7 @@ do ii=1,N
     do kk = 1,20   ! node associated with row block
         do jj = 1,kk ! node associated with column block, only until kk, as upper third of conduction matrix is later simply mirrored
             ! Hinzufügen des Knotenanteils zur Leitungsmatrix
-            tsolid20_C(jj,kk) = tsolid20_C(jj,kk) + c*weight*dNidx(jj)*dNidx(kk) + c*weight*dNidy(jj)*dNidy(kk) + c*weight*dNidz(jj)*dNidz(kk)
+            tsolid20_C(jj,kk) = tsolid20_C(jj,kk) + c*weight*detJac*(dNidx(jj)*dNidx(kk) + dNidy(jj)*dNidy(kk) + dNidz(jj)*dNidz(kk))
             if (abs(tsolid20_C(jj,kk))<1e-10) then
                 tsolid20_C(jj,kk) = 0.d0 ! Remove veeeery small values (<1e-10) and
             end if

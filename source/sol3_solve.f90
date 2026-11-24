@@ -36,11 +36,11 @@ subroutine sol3_solve(fesim,Tf,Tc,Qf,Qc,Cff,Cfc)
 !
 use fesimulation_typen
 #include "petsc/finclude/petscksp.h"
-  use petscksp
+use petscksp
 #include "petsc/finclude/petscvec.h"
-  use petscvec
+use petscvec
 #include "petsc/finclude/petscmat.h"
-  use petscmat
+use petscmat
 !
 ! =================================================================================================
 !
@@ -59,11 +59,11 @@ Vec                                 :: RHS,RHS2 ! Right-hand-side
 KSP                                 :: ksp      ! Krylov space
 PC                                  :: prec     ! precondition context
 PetscErrorCode                      :: ierr
-PetscReal                           :: alpha=-1.0, tol=1e-5
+PetscReal                           :: tol=1e-5
 PetscViewer                         :: viewer
-logical                             :: write=.FALSE.
+logical                             :: writee=.TRUE.
 Vec                                 :: residual
-PetscScalar                         :: rnorm,rhsnorm
+PetscReal                           :: rnorm,rhsnorm
 !
 ! =================================================================================================
 !
@@ -72,14 +72,12 @@ PetscScalar                         :: rnorm,rhsnorm
 ! Start the RHS
 call VecDuplicate(Qf, RHS, ierr); CHKERRQ(ierr)
 call VecCopy(Qf, RHS, ierr);     CHKERRQ(ierr)
-RHS = Qf
 
 call MatCreateVecs(Cfc, PETSC_NULL_VEC, RHS2, ierr); CHKERRQ(ierr)
 call MatMult(Cfc,Tc,RHS2, ierr); CHKERRQ(ierr)   ! Multiply Cfc with Tc, save to RHS2
 
 ! Finish RHS
-call VecAXPY(RHS,alpha,RHS2, ierr); CHKERRQ(ierr) ! Subtract RHS2 from RHS(==Qf)
-
+call VecAXPY(RHS,-1.0d0,RHS2, ierr); CHKERRQ(ierr) ! Subtract RHS2 from RHS(==Qf)
 ! Create linear solver
 call KSPCreate(PETSC_COMM_SELF,ksp, ierr); CHKERRQ(ierr)
 ! Set defining Matrix (==A))
@@ -96,7 +94,6 @@ call PCFactorSetUpMatSolverType(prec,ierr); CHKERRQ(ierr) ! notwendig, um die Me
 
 call KSPSetFromOptions(ksp,ierr); CHKERRQ(ierr)
 ! Solve
-call MatCreateVecs(Cff, PETSC_NULL_VEC, Tf, ierr); CHKERRQ(ierr)
 call KSPSolve(ksp,RHS,Tf, ierr); CHKERRQ(ierr)
 
 ! calculate residual
@@ -117,10 +114,20 @@ endif
 
 call VecDestroy(residual, ierr); CHKERRQ(ierr)
 
-if (write) then
+if (writee) then
     ! Export Tf
-    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tf.txt', viewer, ierr)
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'Tf_after_solve.txt', viewer, ierr)
     call VecView(Tf, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    ! Export RHS
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'RHS_after_solve.txt', viewer, ierr)
+    call VecView(RHS, viewer, ierr)
+    call PetscViewerDestroy(viewer, ierr)
+
+    ! Export RHS
+    call PetscViewerASCIIOpen(PETSC_COMM_SELF, 'RHS2_after_solve.txt', viewer, ierr)
+    call VecView(RHS2, viewer, ierr)
     call PetscViewerDestroy(viewer, ierr)
 endif
 
