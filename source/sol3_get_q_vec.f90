@@ -104,7 +104,7 @@ end do
 ! Assemble flux BC contributions
 !
 do ii = 1, size(fesim%thermal%fluxes)
-    q_flux = fesim%thermal%fluxes(ii)%q
+    q_flux      = -fesim%thermal%fluxes(ii)%q
     node_ids(1) = fesim%thermal%fluxes(ii)%nid1
     node_ids(2) = fesim%thermal%fluxes(ii)%nid2
     node_ids(3) = fesim%thermal%fluxes(ii)%nid3
@@ -171,7 +171,7 @@ do ii = 1, size(fesim%thermal%convections)
             T_ip = T_ip + Ni(jj) * T_nodes(jj)
         end do
         ! Set q_flux according to temperature
-        q_flux = fesim%thermal%convections(ii)%h * (fesim%thermal%convections(ii)%T_amb - T_ip)
+        q_flux = - fesim%thermal%convections(ii)%h * (fesim%thermal%convections(ii)%T_amb - T_ip)
         ! Add IP-contribution to local q-Vector
         q_local = q_local + Ni * q_flux * detJ * w_ip
     end do
