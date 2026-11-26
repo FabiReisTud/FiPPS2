@@ -74,7 +74,7 @@ call VecSet(Tc, 0.0d0, ierr); CHKERRQ(ierr)
 ! Set the Tc-Vector
 call ISGetIndicesF90(is_bc, bc_indices, ierr); CHKERRQ(ierr)
 do ii=1,size(fesim%lasten%nodetemps)
-    if (fesim%lasten%nodetemps(ii)%lid == 1) then
+    if (fesim%lasten%nodetemps(ii)%nid /= 0) then
         tVal = fesim%lasten%nodetemps(ii)%temp
         node_id = fesim%lasten%nodetemps(ii)%nid
         found = 0

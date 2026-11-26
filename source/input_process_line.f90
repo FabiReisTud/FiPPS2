@@ -213,9 +213,9 @@ do while (jj <= len(line))
             fesim%is_thermal_mat_td = .true.
         else if (word == 'thermalflux') then
             fesim%is_thermal_flux = .true.
-        else if (word == 'convectionbc') then
+        else if (word == 'thermalconvection') then
             fesim%is_thermal_convection = .true.
-        else if (word == 'propthermal') then
+        else if (word == 'thermalprop') then
             fesim%is_thermal_prop = .true.
         !!!!!!!!!!! Thermal: End
 
