@@ -73,26 +73,26 @@ call VecSet(Tc, 0.0d0, ierr); CHKERRQ(ierr)
 
 ! Set the Tc-Vector
 call ISGetIndicesF90(is_bc, bc_indices, ierr); CHKERRQ(ierr)
-do ii=1,size(fesim%thermal%tbcs)
-    tVal = fesim%thermal%tbcs(ii)%temperature
-    node_id = fesim%thermal%tbcs(ii)%nid
-    found = 0
-    ! Find the position of node_id-1 in is_bc
-    do jj = 0, is_bc_size-1
-        if (bc_indices(jj+1) == node_id-1) then
-            call VecSetValue(Tc, jj, tVal, INSERT_VALUES, ierr); CHKERRQ(ierr)
-            found = 1
-            exit
+do ii=1,size(fesim%lasten%nodetemps)
+    if (fesim%lasten%nodetemps(ii)%lid == 1) then
+        tVal = fesim%lasten%nodetemps(ii)%temp
+        node_id = fesim%lasten%nodetemps(ii)%nid
+        found = 0
+        ! Find the position of node_id-1 in is_bc
+        do jj = 0, is_bc_size-1
+            if (bc_indices(jj+1) == node_id-1) then
+                call VecSetValue(Tc, jj, tVal, INSERT_VALUES, ierr); CHKERRQ(ierr)
+                found = 1
+                exit
+            end if
+        end do
+
+        if (found == 0) then
+            write(*,*) 'ERROR: Temperature BC node not found in is_bc: ', node_id
+            call ISRestoreIndices(is_bc, bc_indices, ierr); CHKERRQ(ierr)
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, 'Temperature BC node not found in is_bc')
         end if
-    end do
-
-    if (found == 0) then
-        write(*,*) 'ERROR: Temperature BC node not found in is_bc: ', node_id
-        call ISRestoreIndices(is_bc, bc_indices, ierr); CHKERRQ(ierr)
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, &
-                'Temperature BC node not found in is_bc')
     end if
-
 end do
 call ISRestoreIndicesF90(is_bc, bc_indices, ierr); CHKERRQ(ierr)
 

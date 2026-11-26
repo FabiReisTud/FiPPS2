@@ -207,18 +207,16 @@ do while (jj <= len(line))
             fesim%is_failure = .true.
 
         !!!!!!!!!!! Thermal: Start
-        else if (word == 'thermal') then
+        else if (word == 'thermalcontrol') then
             fesim%is_thermal = .true.
-        else if (word == 'matthermaltd') then
-            fesim%is_mat_thermal_td = .true.
-        else if (word == 'tbc') then
-            fesim%is_tbc = .true.
-        else if (word == 'fluxbc') then
-            fesim%is_flux_bc = .true.
+        else if (word == 'thermalmattd') then
+            fesim%is_thermal_mat_td = .true.
+        else if (word == 'thermalflux') then
+            fesim%is_thermal_flux = .true.
         else if (word == 'convectionbc') then
-            fesim%is_convection_bc = .true.
+            fesim%is_thermal_convection = .true.
         else if (word == 'propthermal') then
-            fesim%is_prop_thermal = .true.
+            fesim%is_thermal_prop = .true.
         !!!!!!!!!!! Thermal: End
 
         else if (word == 'outputvtk') then

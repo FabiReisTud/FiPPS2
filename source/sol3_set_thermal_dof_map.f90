@@ -73,10 +73,12 @@ subroutine sol3_set_thermal_dof_map(fesim)
 
  ! 12. Loop over all thermal boundary conditions, assign values to the row in thermal_dof_map if assigned
  ! 121. Loop over temperature BCs
- do ii=1,size(fesim%thermal%tbcs)
-    ll = fesim%thermal%tbcs(ii)%nid
-    fesim%internals%thermal_dof_map(ll,2) = 1.                                          ! Set the type to 1 to signal temperature bc
-    fesim%internals%thermal_dof_map(ll,3) = fesim%thermal%tbcs(ii)%temperature          ! Set the temperature value at the node
+ do ii=1,size(fesim%lasten%nodetemps)
+    if (fesim%lasten%nodetemps(ii)%lid == 1) then
+        ll = fesim%lasten%nodetemps(ii)%nid
+        fesim%internals%thermal_dof_map(ll,2) = 1.                                          ! Set the type to 1 to signal temperature bc
+        fesim%internals%thermal_dof_map(ll,3) = fesim%lasten%nodetemps(ii)%temp             ! Set the temperature value at the node
+    end if
  end do
 
 ! ! 122. Loop over flux BCs

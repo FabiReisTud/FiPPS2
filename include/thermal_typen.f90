@@ -21,11 +21,6 @@ module thermal_typen
     type(thermal_curve_type) :: k
   end type thermal_material_td_type
 
-  type thermal_tbc_type
-    integer :: nid = 0  ! NodeID
-    double precision :: temperature = 0.d0 ! Temperature
-  end type thermal_tbc_type
-
   type thermal_convection_bc_type
     integer :: nid1 = 0              ! ID of nid1
     integer :: nid2 = 0              ! ID of nid2
@@ -71,7 +66,6 @@ module thermal_typen
     double precision, allocatable :: temperature_old(:)
     type(thermal_material_type), allocatable :: materials(:)
     type(thermal_material_td_type), allocatable :: materials_td(:)
-    type(thermal_tbc_type), allocatable :: tbcs(:)
     type(thermal_convection_bc_type), allocatable :: convections(:)
     type(thermal_flux_bc_type), allocatable :: fluxes(:)
     type(thermal_property_type), allocatable :: propthermals(:)
@@ -254,7 +248,6 @@ contains
       deallocate(state%materials_td)
     end if
 
-    if (allocated(state%tbcs))        deallocate(state%tbcs)
     if (allocated(state%convections)) deallocate(state%convections)
     if (allocated(state%fluxes))      deallocate(state%fluxes)
 end subroutine free_mem_thermal
@@ -276,7 +269,6 @@ end subroutine free_mem_thermal
 
       TYPE(thermal_material_type)      :: mat
       TYPE(thermal_material_td_type)   :: mattd
-      TYPE(thermal_tbc_type)           :: tbc
       TYPE(thermal_convection_bc_type) :: conv
       TYPE(thermal_flux_bc_type)       :: flux
 
@@ -303,31 +295,6 @@ end subroutine free_mem_thermal
       CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
       &                           mpi_thermal_material_type, ierror)
       CALL MPI_TYPE_COMMIT(mpi_thermal_material_type, ierror)
-      DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
-
-      !***************************************************************************
-      ! thermal_tbc_type: nid, temperature
-      !***************************************************************************
-      count = 2
-      ALLOCATE(array_of_blockl(1:count)); ALLOCATE(array_of_types(1:count))
-      ALLOCATE(array_of_disp(1:count)); ALLOCATE(address(1:count))
-
-      array_of_types (1) = MPI_INTEGER
-      array_of_blockl(1) = 1
-      CALL MPI_GET_ADDRESS(tbc%nid, address(1), ierror)
-
-      array_of_types (2) = MPI_DOUBLE_PRECISION
-      array_of_blockl(2) = 1
-      CALL MPI_GET_ADDRESS(tbc%temperature, address(2), ierror)
-
-      array_of_disp(1) = 0
-      DO ii = 2, count
-        array_of_disp(ii) = address(ii) - address(1)
-      END DO
-
-      CALL MPI_TYPE_CREATE_STRUCT(count, array_of_blockl, array_of_disp, array_of_types, &
-      &                           mpi_thermal_tbc_type, ierror)
-      CALL MPI_TYPE_COMMIT(mpi_thermal_tbc_type, ierror)
       DEALLOCATE(array_of_blockl, array_of_types, array_of_disp, address)
 
       !***************************************************************************
@@ -413,7 +380,7 @@ end subroutine free_mem_thermal
 
 
 
-    subroutine bcast_thermal(state,is_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc)
+    subroutine bcast_thermal(state,is_thermal,is_mat_thermal_td,is_convection_bc,is_flux_bc)
 
 #include "petsc/finclude/petscsys.h"
     use petscsys
@@ -421,7 +388,7 @@ end subroutine free_mem_thermal
     implicit none
 
     type(thermal_state_type), intent(inout) :: state
-    logical :: is_thermal,is_mat_thermal_td,is_tbc,is_convection_bc,is_flux_bc
+    logical :: is_thermal,is_mat_thermal_td,is_convection_bc,is_flux_bc
 
     PetscMPIInt :: rank
     PetscErrorCode :: ierr
@@ -500,19 +467,6 @@ end subroutine free_mem_thermal
           call MPI_Bcast(state%materials_td(ii)%k%value, n, MPI_DOUBLE_PRECISION, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
         end if
       end do
-    end if
-
-    ! ------------------------------------------------------------------
-    ! Temperature boundary conditions (custom MPI type)
-    ! ------------------------------------------------------------------
-    if (is_tbc) then
-      if (rank .eq. 0) num = size(state%tbcs,1)
-      call MPI_Bcast(num, 1, MPI_INTEGER, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
-      if (rank .ne. 0) then
-        if (allocated(state%tbcs)) deallocate(state%tbcs)
-        allocate(state%tbcs(num))
-      end if
-      call MPI_Bcast(state%tbcs, num, MPI_THERMAL_TBC_TYPE, 0, PETSC_COMM_WORLD, ierr); CHKERRQ(ierr)
     end if
 
     ! ------------------------------------------------------------------

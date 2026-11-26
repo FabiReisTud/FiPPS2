@@ -1884,7 +1884,7 @@ end if
 
 !!!!!!!!!!!!!! Thermal: START
 if (fesim%is_thermal) then
-    fname = 'thermal.fipps'
+    fname = 'thermalcontrol.fipps'
     open (unit=37,file=fname,status='old',action='read', iostat=io_error)
     if (io_error == 0) then
         ! Errorhandling
@@ -1905,7 +1905,7 @@ if (fesim%is_thermal) then
 !        allocate(fesim%thermal)
 
         ! Read the keyword line: 6 values, max. 10 characters each
-        read (37,'(3L10,1I10,2E23.16)',iostat=read_error) &
+        read (37,'(3L1,1I10,2E23.16)',iostat=read_error) &
             & fesim%thermal%enabled, &
             & fesim%thermal%coupled_to_structure, &
             & fesim%thermal%iterative, &
@@ -1933,8 +1933,8 @@ if (fesim%is_thermal) then
     ! Hier noch die ganzen thermal_type-Variablen auslesen
 end if
 
-if (fesim%is_mat_thermal_td) then
-    fname = 'matthermaltd.fipps'
+if (fesim%is_thermal_mat_td) then
+    fname = 'thermalmattd.fipps'
     open (unit=40,file=fname,status='old',action='read', iostat=io_error)
     if (io_error == 0) then
         read (40,*,iostat=read_error) rowcount
@@ -2079,74 +2079,8 @@ if (fesim%is_mat_thermal_td) then
     end if
 end if
 
-if (fesim%is_tbc) then
-    fname = 'tbc.fipps'
-    open (unit=37,file=fname,status='old',action='read', iostat=io_error)
-    if (io_error == 0) then
-        read (37,*,iostat=read_error) rowcount
-        if (read_error /= 0) then
-            write(*,*) 'Error reading file ', fname
-            write(*,*) 'There was a problem reading the number of rows of the file'
-            err_code=1
-            goto 9999
-        end if
-        if (rowcount < 1) then
-            write(*,*) 'Error reading file ', fname
-            write(*,*) 'At least one data line is required'
-            err_code=1
-            goto 9999
-        end if
-        allocate(fesim%thermal%tbcs(1:rowcount))
-
-        do ii=1,rowcount
-            read (37,'(I10,E23.16)',iostat=read_error) fesim%thermal%tbcs(ii)%nid, fesim%thermal%tbcs(ii)%temperature
-            if (read_error /= 0) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'There was an error processing line', ii
-                err_code=1
-                goto 9999
-            end if
-        end do
-
-        close (37, iostat=io_error)
-        if (io_error /= 0) then
-            write(*,*) 'Error closing file ', fname
-            err_code=1
-            goto 9999
-        end if
-
-        ! Validation: node IDs must exist in the model
-        do ii=1,rowcount
-            if ((fesim%thermal%tbcs(ii)%nid < 1) .or. &
-              & (fesim%thermal%tbcs(ii)%nid > fesim%num_nodes)) then
-                write(*,*) 'Error reading file ', fname
-                write(*,*) 'Node ID ', fesim%thermal%tbcs(ii)%nid, &
-                         & ' in line ', ii, ' is not defined in the model'
-                err_code=1
-                goto 9999
-            end if
-        end do
-
-        ! Warning on duplicate node IDs (last entry wins)
-        do ii=1,rowcount
-            do jj=ii+1,rowcount
-                if (fesim%thermal%tbcs(ii)%nid == fesim%thermal%tbcs(jj)%nid) then
-                    write(*,*) 'Warning: multiple temperature BCs on node ', &
-                             & fesim%thermal%tbcs(ii)%nid, &
-                             & '- last definition is used'
-                end if
-            end do
-        end do
-
-    else
-        write (*,*) 'Error opening file ', fname
-        err_code=1
-        goto 9999
-    end if
-end if
-
-if (fesim%is_convection_bc) then
-    fname = 'convectionbc.fipps'
+if (fesim%is_thermal_convection) then
+    fname = 'thermalconvection.fipps'
     open (unit=39, file=fname, status='old', action='read', iostat=io_error)
     if (io_error == 0) then
         read (39,*,iostat=read_error) rowcount
@@ -2221,8 +2155,8 @@ if (fesim%is_convection_bc) then
     end if
 end if
 
-if (fesim%is_flux_bc) then
-    fname = 'fluxbc.fipps'
+if (fesim%is_thermal_flux) then
+    fname = 'thermalflux.fipps'
     open (unit=40, file=fname, status='old', action='read', iostat=io_error)
     if (io_error == 0) then
         read (40,*,iostat=read_error) rowcount
@@ -2280,8 +2214,8 @@ if (fesim%is_flux_bc) then
     end if
 end if
 
-if (fesim%is_prop_thermal) then
-    fname = 'propthermal.fipps'
+if (fesim%is_thermal_prop) then
+    fname = 'thermalprop.fipps'
     open (unit=40, file=fname, status='old', action='read', iostat=io_error)
     if (io_error == 0) then
         read (40,*,iostat=read_error) rowcount
